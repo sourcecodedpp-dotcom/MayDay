@@ -1,0 +1,121 @@
+{
+  "case_id": "HHG-003",
+  "case": {
+    "case_id": "HHG-003",
+    "status": "closed_fraud",
+    "verdict": "fraud",
+    "fraud_probability": 0.88,
+    "pattern": "card_testing",
+    "pattern_description": "",
+    "affected_txn_ids": [
+      "3530164"
+    ],
+    "first_suspicious_txn_id": "3530164",
+    "connected_card_ids": [],
+    "connected_device_profiles": [],
+    "exposure_usd": 49.0,
+    "evidence": [
+      {
+        "claim": "Flagged transaction 3530164 ($49.00) on in_person channel with model risk score 0.50",
+        "source": "graph",
+        "ref": "query:get_card_history(card_id=C08623-K2)",
+        "entity_ids": [
+          "3530164"
+        ]
+      },
+      {
+        "claim": "Card testing pattern identified: 3 authorizations under $10 followed by larger purchase",
+        "source": "graph",
+        "ref": "query:detect_card_testing",
+        "entity_ids": [
+          "3128139",
+          "3162397",
+          "3162401"
+        ]
+      },
+      {
+        "claim": "Cardholder has established regular history in billing region 330.0 (51 historical transactions)",
+        "source": "graph",
+        "ref": "query:check_region_history(region=330.0)",
+        "entity_ids": [
+          "3530164"
+        ]
+      },
+      {
+        "claim": "Retrieved 3 prior closed cases (CC-0137, CC-0290, CC-0370) matching pattern 'card_testing'",
+        "source": "document",
+        "ref": "query:retrieve_similar_cases",
+        "entity_ids": [
+          "CC-0137",
+          "CC-0290",
+          "CC-0370"
+        ]
+      },
+      {
+        "claim": "Customer validation response: 'Customer denies making or authorizing this transaction and remains in possession of physical card.'",
+        "source": "customer",
+        "ref": "evidence_request:1",
+        "entity_ids": []
+      }
+    ],
+    "similar_prior_cases": [
+      "CC-0137",
+      "CC-0290",
+      "CC-0370"
+    ],
+    "summary": "Investigation for HHG-003 (C08623, card C08623-K2). Verdict: fraud (card testing). Identified unauthorized transactions totaling $49.00.",
+    "written_to_graph": true,
+    "graph_case_id": "CASE-20260923-HHG-003"
+  },
+  "evidence_requests": [
+    {
+      "type": "customer_validation",
+      "asked_after_step": 3,
+      "assumed_response": "Customer denies making or authorizing this transaction and remains in possession of physical card."
+    }
+  ],
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "DECLINE_TRANSACTION",
+        "route": "L1",
+        "reason": "R5: card testing sequence observed"
+      },
+      {
+        "action": "STEP_UP_AUTH",
+        "route": "auto",
+        "reason": "R5: testing sequence; require step-up before larger activity"
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "Section 3a: card testing investigation"
+      }
+    ],
+    "final": [
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "R2: unauthorized activity confirmed; exposure $49.00"
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "R2/Section 3a: write internal case to graph"
+      }
+    ],
+    "what_changed": "Customer denial confirmed unauthorized activity. Assessed fraud probability increased to 0.88, elevating initial verification hold to card block and case creation."
+  },
+  "sar": {
+    "file": false,
+    "reason": "Policy Section 3a: Case does not meet SAR filing criteria (exposure $49.00 <= $1000 and no cross-card syndicate link).",
+    "narrative": "",
+    "subjects": [],
+    "total_amount_usd": 0.0,
+    "activity_dates": []
+  },
+  "stop_reason": "Customer denial and corroborating graph evidence established confirmed unauthorized activity under Policy R2.",
+  "tool_calls": 6,
+  "tokens": 6300,
+  "latency_s": 0.0
+}

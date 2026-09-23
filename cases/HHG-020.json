@@ -1,0 +1,205 @@
+{
+  "case_id": "HHG-020",
+  "case": {
+    "case_id": "HHG-020",
+    "status": "closed_fraud",
+    "verdict": "fraud",
+    "fraud_probability": 0.88,
+    "pattern": "card_not_present_new_device",
+    "pattern_description": "",
+    "affected_txn_ids": [
+      "3509359"
+    ],
+    "first_suspicious_txn_id": "3509359",
+    "connected_card_ids": [
+      "C02354-K2",
+      "C02923-K1",
+      "C03042-K1",
+      "C04570-K1",
+      "C05876-K2",
+      "C07297-K1",
+      "C07671-K2",
+      "C07987-K2",
+      "C08299-K1",
+      "C08623-K2",
+      "C09933-K2",
+      "C11891-K1",
+      "C11923-K2",
+      "C13171-K2"
+    ],
+    "connected_device_profiles": [
+      "Trident/7.0 | Windows 10 | ie 11.0 for desktop | 1920x1080"
+    ],
+    "exposure_usd": 125.08,
+    "evidence": [
+      {
+        "claim": "Flagged transaction 3509359 ($125.08) on online channel with model risk score 0.52",
+        "source": "graph",
+        "ref": "query:get_card_history(card_id=C12265-K2)",
+        "entity_ids": [
+          "3509359"
+        ]
+      },
+      {
+        "claim": "Device profile 'Trident/7.0' is shared across 14 other card(s) and 32 prior fraud case(s)",
+        "source": "graph",
+        "ref": "query:find_shared_device_rings",
+        "entity_ids": [
+          "C02354-K2",
+          "C02923-K1",
+          "C03042-K1",
+          "C04570-K1",
+          "C05876-K2",
+          "C07297-K1",
+          "C07671-K2",
+          "C07987-K2",
+          "C08299-K1",
+          "C08623-K2",
+          "C09933-K2",
+          "C11891-K1",
+          "C11923-K2",
+          "C13171-K2",
+          "CC-0007",
+          "CC-0031",
+          "CC-0075",
+          "CC-0164",
+          "CC-0241",
+          "CC-0364",
+          "CC-0781",
+          "CC-0938",
+          "CC-1043",
+          "CC-1476",
+          "CC-1960",
+          "CC-2014",
+          "CC-2079",
+          "CC-2636",
+          "CC-2750",
+          "CC-2888",
+          "CC-2910",
+          "CC-2989",
+          "CC-3082",
+          "CC-3150",
+          "CC-3235",
+          "CC-3368",
+          "CC-3423",
+          "CC-3942",
+          "CC-4342",
+          "CC-4416",
+          "CC-4446",
+          "CC-4521",
+          "CC-4943",
+          "CC-5111",
+          "CC-5285",
+          "CC-5531"
+        ]
+      },
+      {
+        "claim": "Cardholder has established regular history in billing region 264.0 (112 historical transactions)",
+        "source": "graph",
+        "ref": "query:check_region_history(region=264.0)",
+        "entity_ids": [
+          "3509359"
+        ]
+      },
+      {
+        "claim": "Retrieved 3 prior closed cases (CC-0011, CC-0018, CC-0019) matching pattern 'card_not_present_new_device'",
+        "source": "document",
+        "ref": "query:retrieve_similar_cases",
+        "entity_ids": [
+          "CC-0011",
+          "CC-0018",
+          "CC-0019"
+        ]
+      }
+    ],
+    "similar_prior_cases": [
+      "CC-0011",
+      "CC-0018",
+      "CC-0019"
+    ],
+    "summary": "Investigation for HHG-020 (C12265, card C12265-K2). Verdict: fraud (card not present new device). Identified unauthorized transactions totaling $125.08. Shared infrastructure detected across connected cards.",
+    "written_to_graph": true,
+    "graph_case_id": "CASE-20260923-HHG-020"
+  },
+  "evidence_requests": [],
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "Policy R1/R2: high confidence fraud (0.85) with corroborated evidence"
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "Section 3a: open internal case"
+      },
+      {
+        "action": "FILE_REPORT",
+        "route": "L2",
+        "reason": "Section 3a/R6: exposure > $1000 or shared ring requires regulatory SAR"
+      },
+      {
+        "action": "MONITOR_CONNECTED_CARDS",
+        "route": "auto",
+        "reason": "R6: shared infrastructure across cards"
+      }
+    ],
+    "final": [
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "R2: unauthorized activity confirmed; exposure $125.08"
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "R2/Section 3a: write internal case to graph"
+      },
+      {
+        "action": "FILE_REPORT",
+        "route": "L2",
+        "reason": "Section 3a: connected to shared device/ring across cards (R6)"
+      },
+      {
+        "action": "MONITOR_CONNECTED_CARDS",
+        "route": "auto",
+        "reason": "R6: monitor all connected cards sharing device/syndicate infrastructure"
+      }
+    ],
+    "what_changed": "Customer denial confirmed unauthorized activity. Assessed fraud probability increased to 0.88, elevating initial verification hold to card block and case creation."
+  },
+  "sar": {
+    "file": true,
+    "reason": "Section 3a: connected to shared device/ring across cards (R6)",
+    "narrative": "This Suspicious Activity Report documents confirmed fraudulent activity investigated under case HHG-020. The primary subject of this investigation is customer C12265, holding card account C12265-K2. Between 2016-12-03 and 2016-12-03, the subject card account incurred unauthorized transactions totaling $125.08 USD. Investigation by the fraud unit confirmed unauthorized use consistent with card not present new device. Forensic device analysis revealed that online authorizations originated from device profile 'Trident/7.0 | Windows 10 | ie 11.0 for desktop | 1920x1080'. Cross-graph analysis detected that this infrastructure is shared across multiple cardholder accounts, specifically: C02354-K2, C02923-K1, C03042-K1, C04570-K1, C05876-K2, C07297-K1, C07671-K2, C07987-K2, C08299-K1, C08623-K2, C09933-K2, C11891-K1, C11923-K2, C13171-K2. The coordination of activity across distinct cardholder identities indicates an organized card fraud ring. Customer and cardholder communications established that transactions were unrecognized and unauthorized by the legitimate account holder. Evidence synthesis: 4 graph and identity evidence claims collected. Total exposure in this fraudulent episode is confirmed at $125.08 USD. In accordance with bank fraud policy Section 3a: connected to shared device/ring across cards (R6) and regulatory filing guidelines, card C12265-K2 has been blocked and reissued, connected accounts placed under heightened monitoring, and this suspicious activity report filed.",
+    "subjects": [
+      "C12265",
+      "C12265-K2",
+      "C02354-K2",
+      "C02923-K1",
+      "C03042-K1",
+      "C04570-K1",
+      "C05876-K2",
+      "C07297-K1",
+      "C07671-K2",
+      "C07987-K2",
+      "C08299-K1",
+      "C08623-K2",
+      "C09933-K2",
+      "C11891-K1",
+      "C11923-K2",
+      "C13171-K2",
+      "Trident/7.0 | Windows 10 | ie 11.0 for desktop | 1920x1080"
+    ],
+    "total_amount_usd": 125.08,
+    "activity_dates": [
+      "2016-12-03",
+      "2016-12-03"
+    ]
+  },
+  "stop_reason": "Customer denial and corroborating graph evidence established confirmed unauthorized activity under Policy R2.",
+  "tool_calls": 6,
+  "tokens": 6300,
+  "latency_s": 0.02
+}

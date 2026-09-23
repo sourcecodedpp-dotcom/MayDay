@@ -1,0 +1,16 @@
+# Virtual Environment
+venv/
+__pycache__/
+*.pyc
+
+# Local Database Cache & Raw Large Files
+data/*.csv
+data/investigation.db
+*.sqlite
+*.sqlite3
+
+# OS Files
+.DS_Store
+
+# Environment Variables
+.env

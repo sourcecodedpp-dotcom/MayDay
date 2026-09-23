@@ -1,0 +1,112 @@
+// ==============================================================================
+// TigerGraph Schema DDL: Fraud Investigation Knowledge Graph (HHGOA 2026)
+// Aligned with IEEE-CIS Fraud Detection dataset and TigerGraph Savanna guidelines
+// ==============================================================================
+
+CREATE VERTEX Customer (
+    PRIMARY_ID customer_id STRING,
+    customer_id STRING
+) WITH STATS="OUTDEGREE";
+
+CREATE VERTEX Card (
+    PRIMARY_ID card_id STRING,
+    card_id STRING,
+    card_type STRING,
+    card_network STRING
+) WITH STATS="OUTDEGREE";
+
+CREATE VERTEX Transaction (
+    PRIMARY_ID txn_id STRING,
+    txn_id STRING,
+    amount DOUBLE,
+    ts STRING,
+    channel STRING,
+    risk_score DOUBLE,
+    product_cd STRING,
+    addr1 STRING,
+    addr2 STRING
+) WITH STATS="OUTDEGREE";
+
+CREATE VERTEX DeviceProfile (
+    PRIMARY_ID device_id STRING,
+    device_id STRING,
+    device_info STRING,
+    os STRING,
+    browser STRING,
+    screen STRING,
+    proxy_flag STRING
+) WITH STATS="OUTDEGREE";
+
+CREATE VERTEX EmailDomain (
+    PRIMARY_ID domain STRING,
+    domain STRING
+) WITH STATS="OUTDEGREE";
+
+CREATE VERTEX BillingRegion (
+    PRIMARY_ID region_code STRING,
+    region_code STRING
+) WITH STATS="OUTDEGREE";
+
+CREATE VERTEX ClosedCase (
+    PRIMARY_ID case_id STRING,
+    case_id STRING,
+    opened_at STRING,
+    closed_at STRING,
+    outcome STRING,
+    pattern STRING,
+    exposure_usd DOUBLE,
+    actions_taken STRING,
+    report_filed STRING,
+    analyst_notes STRING
+) WITH STATS="OUTDEGREE";
+
+CREATE VERTEX FraudCase (
+    PRIMARY_ID case_id STRING,
+    case_id STRING,
+    opened_at STRING,
+    status STRING,
+    verdict STRING,
+    fraud_probability DOUBLE,
+    pattern STRING,
+    pattern_description STRING,
+    exposure_usd DOUBLE,
+    summary STRING,
+    stop_reason STRING
+) WITH STATS="OUTDEGREE";
+
+// ------------------------------------------------------------------------------
+// Edges
+// ------------------------------------------------------------------------------
+CREATE DIRECTED EDGE OWNS (FROM Customer, TO Card) WITH REVERSE_EDGE="OWNED_BY";
+CREATE DIRECTED EDGE MADE (FROM Card, TO Transaction) WITH REVERSE_EDGE="MADE_BY";
+CREATE DIRECTED EDGE FROM_DEVICE (FROM Transaction, TO DeviceProfile) WITH REVERSE_EDGE="USED_IN_TXN";
+CREATE DIRECTED EDGE PURCHASER_EMAIL (FROM Transaction, TO EmailDomain) WITH REVERSE_EDGE="EMAIL_FOR_TXN";
+CREATE DIRECTED EDGE BILLED_IN (FROM Transaction, TO BillingRegion) WITH REVERSE_EDGE="REGION_FOR_TXN";
+CREATE DIRECTED EDGE NEXT_TXN (FROM Transaction, TO Transaction);
+
+CREATE DIRECTED EDGE INVOLVES (FROM ClosedCase, TO Transaction) WITH REVERSE_EDGE="IN_CLOSED_CASE";
+CREATE DIRECTED EDGE ON_CARD (FROM ClosedCase, TO Card) WITH REVERSE_EDGE="CARD_IN_CLOSED_CASE";
+CREATE DIRECTED EDGE CONNECTED_TO (FROM ClosedCase, TO Card) WITH REVERSE_EDGE="LINKED_CLOSED_CASE";
+
+CREATE DIRECTED EDGE CASE_INVOLVES_TXN (FROM FraudCase, TO Transaction) WITH REVERSE_EDGE="TXN_IN_CASE";
+CREATE DIRECTED EDGE CASE_ON_CARD (FROM FraudCase, TO Card) WITH REVERSE_EDGE="CARD_IN_CASE";
+CREATE DIRECTED EDGE CASE_LINKED_DEVICE (FROM FraudCase, TO DeviceProfile) WITH REVERSE_EDGE="DEVICE_IN_CASE";
+
+// ------------------------------------------------------------------------------
+// Graph Definition
+// ------------------------------------------------------------------------------
+CREATE GRAPH FraudGraph(
+    Customer, Card, Transaction, DeviceProfile, EmailDomain, BillingRegion, ClosedCase, FraudCase,
+    OWNS, OWNED_BY,
+    MADE, MADE_BY,
+    FROM_DEVICE, USED_IN_TXN,
+    PURCHASER_EMAIL, EMAIL_FOR_TXN,
+    BILLED_IN, REGION_FOR_TXN,
+    NEXT_TXN,
+    INVOLVES, IN_CLOSED_CASE,
+    ON_CARD, CARD_IN_CLOSED_CASE,
+    CONNECTED_TO, LINKED_CLOSED_CASE,
+    CASE_INVOLVES_TXN, TXN_IN_CASE,
+    CASE_ON_CARD, CARD_IN_CASE,
+    CASE_LINKED_DEVICE, DEVICE_IN_CASE
+);

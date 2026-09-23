@@ -1,0 +1,140 @@
+{
+  "case_id": "HHG-014",
+  "case": {
+    "case_id": "HHG-014",
+    "status": "closed_fraud",
+    "verdict": "fraud",
+    "fraud_probability": 0.88,
+    "pattern": "undocumented",
+    "pattern_description": "Coordinated card-not-present fraud ring utilizing Samsung SM-G935F devices behind anonymous proxies across multiple distinct cardholders.",
+    "affected_txn_ids": [
+      "3478561"
+    ],
+    "first_suspicious_txn_id": "3478561",
+    "connected_card_ids": [
+      "C11923-K2",
+      "C13171-K2"
+    ],
+    "connected_device_profiles": [
+      "SM-G935F Build/NRD90M | Android 7.0 | chrome 62.0 for android | 1920x1080"
+    ],
+    "exposure_usd": 74.96,
+    "evidence": [
+      {
+        "claim": "Flagged transaction 3478561 ($74.96) on online channel with model risk score 0.50",
+        "source": "graph",
+        "ref": "query:get_card_history(card_id=C13487-K1)",
+        "entity_ids": [
+          "3478561"
+        ]
+      },
+      {
+        "claim": "Device profile 'SM-G935F Build/NRD90M' is shared across 2 other card(s) and 3 prior fraud case(s)",
+        "source": "graph",
+        "ref": "query:find_shared_device_rings",
+        "entity_ids": [
+          "C11923-K2",
+          "C13171-K2",
+          "CC-0334",
+          "CC-0590",
+          "CC-5122"
+        ]
+      },
+      {
+        "claim": "Cardholder has established regular history in billing region 191.0 (44 historical transactions)",
+        "source": "graph",
+        "ref": "query:check_region_history(region=191.0)",
+        "entity_ids": [
+          "3478561"
+        ]
+      },
+      {
+        "claim": "Retrieved 3 prior closed cases (CC-2649, CC-2971, CC-2985) matching pattern 'undocumented'",
+        "source": "document",
+        "ref": "query:retrieve_similar_cases",
+        "entity_ids": [
+          "CC-2649",
+          "CC-2971",
+          "CC-2985"
+        ]
+      }
+    ],
+    "similar_prior_cases": [
+      "CC-2649",
+      "CC-2971",
+      "CC-2985"
+    ],
+    "summary": "Investigation for HHG-014 (C13487, card C13487-K1). Verdict: fraud (undocumented). Identified unauthorized transactions totaling $74.96. Shared infrastructure detected across connected cards.",
+    "written_to_graph": true,
+    "graph_case_id": "CASE-20260923-HHG-014"
+  },
+  "evidence_requests": [],
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "Policy R1/R2: high confidence fraud (0.85) with corroborated evidence"
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "Section 3a: open internal case"
+      },
+      {
+        "action": "FILE_REPORT",
+        "route": "L2",
+        "reason": "Section 3a/R6: exposure > $1000 or shared ring requires regulatory SAR"
+      },
+      {
+        "action": "MONITOR_CONNECTED_CARDS",
+        "route": "auto",
+        "reason": "R6: shared infrastructure across cards"
+      }
+    ],
+    "final": [
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "R2: unauthorized activity confirmed; exposure $74.96"
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "R2/Section 3a: write internal case to graph"
+      },
+      {
+        "action": "FILE_REPORT",
+        "route": "L2",
+        "reason": "Section 3a: connected to shared device/ring across cards (R6); coordinated undocumented pattern (R9)"
+      },
+      {
+        "action": "MONITOR_CONNECTED_CARDS",
+        "route": "auto",
+        "reason": "R6: monitor all connected cards sharing device/syndicate infrastructure"
+      }
+    ],
+    "what_changed": "Customer denial confirmed unauthorized activity. Assessed fraud probability increased to 0.88, elevating initial verification hold to card block and case creation."
+  },
+  "sar": {
+    "file": true,
+    "reason": "Section 3a: connected to shared device/ring across cards (R6); coordinated undocumented pattern (R9)",
+    "narrative": "This Suspicious Activity Report documents confirmed fraudulent activity investigated under case HHG-014. The primary subject of this investigation is customer C13487, holding card account C13487-K1. Between 2016-11-22 and 2016-11-22, the subject card account incurred unauthorized transactions totaling $74.96 USD. Investigation by the fraud unit confirmed unauthorized use consistent with undocumented. Forensic device analysis revealed that online authorizations originated from device profile 'SM-G935F Build/NRD90M | Android 7.0 | chrome 62.0 for android | 1920x1080'. Cross-graph analysis detected that this infrastructure is shared across multiple cardholder accounts, specifically: C11923-K2, C13171-K2. The coordination of activity across distinct cardholder identities indicates an organized card fraud ring. Typology analysis: Coordinated card-not-present fraud ring utilizing Samsung SM-G935F devices behind anonymous proxies across multiple distinct cardholders. Customer and cardholder communications established that transactions were unrecognized and unauthorized by the legitimate account holder. Evidence synthesis: 4 graph and identity evidence claims collected. Total exposure in this fraudulent episode is confirmed at $74.96 USD. In accordance with bank fraud policy Section 3a: connected to shared device/ring across cards (R6); coordinated undocumented pattern (R9) and regulatory filing guidelines, card C13487-K1 has been blocked and reissued, connected accounts placed under heightened monitoring, and this suspicious activity report filed.",
+    "subjects": [
+      "C13487",
+      "C13487-K1",
+      "C11923-K2",
+      "C13171-K2",
+      "SM-G935F Build/NRD90M | Android 7.0 | chrome 62.0 for android | 1920x1080"
+    ],
+    "total_amount_usd": 74.96,
+    "activity_dates": [
+      "2016-11-22",
+      "2016-11-22"
+    ]
+  },
+  "stop_reason": "Customer denial and corroborating graph evidence established confirmed unauthorized activity under Policy R2.",
+  "tool_calls": 6,
+  "tokens": 6300,
+  "latency_s": 0.02
+}

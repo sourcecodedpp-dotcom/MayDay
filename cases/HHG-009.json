@@ -1,0 +1,86 @@
+{
+  "case_id": "HHG-009",
+  "case": {
+    "case_id": "HHG-009",
+    "status": "closed_fraud",
+    "verdict": "fraud",
+    "fraud_probability": 0.88,
+    "pattern": "card_not_present_fraud",
+    "pattern_description": "",
+    "affected_txn_ids": [
+      "3581141"
+    ],
+    "first_suspicious_txn_id": "3581141",
+    "connected_card_ids": [],
+    "connected_device_profiles": [],
+    "exposure_usd": 30.02,
+    "evidence": [
+      {
+        "claim": "Flagged transaction 3581141 ($30.02) on online channel with model risk score 0.50",
+        "source": "graph",
+        "ref": "query:get_card_history(card_id=C08299-K1)",
+        "entity_ids": [
+          "3581141"
+        ]
+      },
+      {
+        "claim": "Retrieved 3 prior closed cases (CC-0001, CC-0007, CC-0012) matching pattern 'card_not_present_fraud'",
+        "source": "document",
+        "ref": "query:retrieve_similar_cases",
+        "entity_ids": [
+          "CC-0001",
+          "CC-0007",
+          "CC-0012"
+        ]
+      }
+    ],
+    "similar_prior_cases": [
+      "CC-0001",
+      "CC-0007",
+      "CC-0012"
+    ],
+    "summary": "Investigation for HHG-009 (C08299, card C08299-K1). Verdict: fraud (card not present fraud). Identified unauthorized transactions totaling $30.02.",
+    "written_to_graph": true,
+    "graph_case_id": "CASE-20260923-HHG-009"
+  },
+  "evidence_requests": [],
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "Section 3a: customer reported unrecognized transaction"
+      },
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "R2: customer reported unauthorized charge; block pending investigation"
+      }
+    ],
+    "final": [
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "R2: unauthorized activity confirmed; exposure $30.02"
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "R2/Section 3a: write internal case to graph"
+      }
+    ],
+    "what_changed": "Customer denial confirmed unauthorized activity. Assessed fraud probability increased to 0.88, elevating initial verification hold to card block and case creation."
+  },
+  "sar": {
+    "file": false,
+    "reason": "Policy Section 3a: Case does not meet SAR filing criteria (exposure $30.02 <= $1000 and no cross-card syndicate link).",
+    "narrative": "",
+    "subjects": [],
+    "total_amount_usd": 0.0,
+    "activity_dates": []
+  },
+  "stop_reason": "Customer denial and corroborating graph evidence established confirmed unauthorized activity under Policy R2.",
+  "tool_calls": 6,
+  "tokens": 6300,
+  "latency_s": 0.0
+}

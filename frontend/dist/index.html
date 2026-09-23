@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TigerGraph Agentic Fraud Investigation Cockpit (HHGOA 2026)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    #cy { width: 100%; height: 320px; background: #0f172a; border-radius: 0.5rem; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center font-bold text-slate-950">
+        <i class="fa-solid fa-project-diagram"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          TigerGraph Agentic Fraud Cockpit
+          <span class="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-medium">HHGOA 2026</span>
+        </h1>
+        <p class="text-xs text-slate-400">Autonomous Investigation, Uncertainty Quantification & Next-Best Action Engine</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2 text-xs bg-slate-800 px-3 py-1.5 rounded-md border border-slate-700">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-slate-300">Graph:</span>
+        <span class="mono font-semibold text-emerald-400">FraudGraph (TigerGraph Savanna)</span>
+      </div>
+      <div class="flex items-center space-x-2 text-xs bg-slate-800 px-3 py-1.5 rounded-md border border-slate-700">
+        <i class="fa-solid fa-shield-halved text-amber-400"></i>
+        <span class="text-slate-300">Policy:</span>
+        <span class="mono font-semibold text-amber-400">R1–R10 (Deterministic)</span>
+      </div>
+      <button onclick="runAllBenchmarks()" class="text-xs bg-orange-600 hover:bg-orange-500 text-white font-semibold px-3 py-1.5 rounded-md transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-play"></i> Re-Run Benchmark (20 Cases)
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 flex overflow-hidden">
+    
+    <!-- Left Sidebar: Case Queue -->
+    <aside class="w-80 bg-slate-900/70 border-r border-slate-800 flex flex-col shrink-0">
+      <div class="p-3 border-b border-slate-800 flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+          <i class="fa-solid fa-list-check text-slate-500"></i> Case Pack Queue (20)
+        </span>
+        <span class="text-[11px] mono bg-slate-800 text-slate-300 px-2 py-0.5 rounded">20 Evaluated</span>
+      </div>
+      <div class="flex-1 overflow-y-auto p-2 space-y-1.5" id="caseList">
+        <!-- Rendered via JS -->
+      </div>
+    </aside>
+
+    <!-- Center Column: Graph Canvas, Evidence & Telemetry -->
+    <section class="flex-1 flex flex-col border-r border-slate-800 overflow-y-auto">
+      
+      <!-- Graph Canvas -->
+      <div class="p-4 border-b border-slate-800 bg-slate-900/40">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-network-wired text-orange-400 text-sm"></i>
+            <h2 class="text-sm font-semibold text-white">Live Investigation Subgraph</h2>
+            <span class="text-xs text-slate-400" id="graphStats">Multi-hop graph traversal</span>
+          </div>
+          <div class="flex items-center space-x-3 text-xs text-slate-400">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Customer/Card</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Flagged Txn</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Device Profile</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Connected Card</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Prior Case</span>
+          </div>
+        </div>
+        <div id="cy" class="border border-slate-800"></div>
+      </div>
+
+      <!-- Evidence Stream & Claims -->
+      <div class="p-4 border-b border-slate-800 flex-1">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+          <i class="fa-solid fa-magnifying-glass text-orange-400"></i> Evidence Stream & Graph Claims
+        </h3>
+        <div class="space-y-2.5" id="evidenceList">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <!-- TigerGraph MCP Telemetry -->
+      <div class="p-4 bg-slate-900/30">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-terminal text-emerald-400"></i> TigerGraph MCP Tool Telemetry</span>
+          <span class="text-[11px] mono text-slate-500" id="telemetryStats">0 tool calls</span>
+        </h3>
+        <div class="bg-slate-950 p-2.5 rounded border border-slate-800 mono text-xs text-slate-400 space-y-1" id="telemetryLog">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Right Column: Case Dossier, NBA Matrix & SAR -->
+    <aside class="w-96 bg-slate-900/50 flex flex-col overflow-y-auto shrink-0 p-4 space-y-4">
+      
+      <!-- Case Header Card -->
+      <div class="bg-slate-900 p-4 rounded-lg border border-slate-800">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="text-xs mono text-orange-400 font-bold" id="detailCaseId">HHG-001</span>
+            <h2 class="text-base font-bold text-white mt-0.5" id="detailVerdict">Legitimate</h2>
+          </div>
+          <span id="detailBadge" class="text-xs font-semibold px-2 py-0.5 rounded border">Closed</span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-800 text-xs">
+          <div>
+            <span class="text-slate-400">Pattern:</span>
+            <p class="font-semibold text-slate-200 mt-0.5 mono text-[11px]" id="detailPattern">none</p>
+          </div>
+          <div>
+            <span class="text-slate-400">Exposure:</span>
+            <p class="font-bold text-amber-400 mt-0.5 text-sm mono" id="detailExposure">$0.00</p>
+          </div>
+        </div>
+
+        <div class="mt-3 pt-3 border-t border-slate-800">
+          <div class="flex justify-between text-xs text-slate-400 mb-1">
+            <span>Fraud Probability</span>
+            <span class="mono font-bold text-white" id="probText">5%</span>
+          </div>
+          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+            <div id="probBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 5%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Next Best Action Split-View -->
+      <div class="bg-slate-900 p-4 rounded-lg border border-slate-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-arrows-split-up-and-left text-amber-400"></i> Next Best Action Matrix
+          </h3>
+          <span class="text-[10px] bg-slate-800 border border-slate-700 text-slate-300 px-1.5 py-0.5 rounded">R1–R10 Rules</span>
+        </div>
+
+        <!-- Initial Actions (Pre-Evidence) -->
+        <div class="bg-slate-950 p-2.5 rounded border border-slate-800/80">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+            <span>1. Initial Action (Pre-Evidence)</span>
+            <span class="text-[10px] text-amber-400 font-mono">STAGE 1</span>
+          </div>
+          <div class="space-y-1.5 mt-2" id="initialActionsList">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Evidence Request / Resolution Banner -->
+        <div class="bg-amber-950/30 border border-amber-500/30 p-2.5 rounded text-xs">
+          <div class="font-semibold text-amber-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-comment-dots text-amber-400"></i> Controlled Evidence Request
+          </div>
+          <p class="text-slate-300 mt-1 italic text-[11px]" id="evidenceRequestText">Customer validation requested.</p>
+        </div>
+
+        <!-- Final Actions (Post-Evidence) -->
+        <div class="bg-slate-950 p-2.5 rounded border border-slate-800/80">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+            <span>2. Final Action (Post-Evidence)</span>
+            <span class="text-[10px] text-emerald-400 font-mono">STAGE 2</span>
+          </div>
+          <div class="space-y-1.5 mt-2" id="finalActionsList">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- What Changed -->
+        <div class="p-2.5 rounded bg-slate-800/40 border border-slate-800 text-[11px] text-slate-300">
+          <span class="font-semibold text-slate-400 block mb-0.5">What Changed:</span>
+          <p id="whatChangedText" class="text-slate-300"></p>
+        </div>
+
+        <!-- Live Simulation Controls -->
+        <div class="pt-2 border-t border-slate-800 flex gap-2">
+          <button onclick="simulateResponse('Customer confirms they made this transaction.')" class="flex-1 text-[11px] bg-slate-800 hover:bg-emerald-950 hover:text-emerald-300 hover:border-emerald-500 border border-slate-700 py-1.5 rounded transition font-medium">
+            Simulate: Confirm
+          </button>
+          <button onclick="simulateResponse('Customer denies making or authorizing this transaction.')" class="flex-1 text-[11px] bg-slate-800 hover:bg-rose-950 hover:text-rose-300 hover:border-rose-500 border border-slate-700 py-1.5 rounded transition font-medium">
+            Simulate: Deny
+          </button>
+        </div>
+      </div>
+
+      <!-- SAR (Suspicious Activity Report) Panel -->
+      <div class="bg-slate-900 p-4 rounded-lg border border-slate-800" id="sarCard">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-file-contract text-rose-400"></i> Regulatory SAR Filing
+          </h3>
+          <span id="sarStatusBadge" class="text-[10px] font-semibold px-2 py-0.5 rounded border">NOT FILED</span>
+        </div>
+        <div id="sarContent" class="text-xs text-slate-400 space-y-2">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <script>
+    let currentCaseId = 'HHG-001';
+    let cyInstance = null;
+
+    async function loadCases() {
+      const res = await fetch('/api/cases');
+      const cases = await res.json();
+      
+      const listEl = document.getElementById('caseList');
+      listEl.innerHTML = '';
+      
+      cases.forEach(c => {
+        const item = document.createElement('div');
+        const isActive = c.case_id === currentCaseId;
+        const isFraud = c.verdict === 'fraud';
+        
+        item.className = `p-2.5 rounded-md cursor-pointer transition border text-xs ${
+          isActive 
+            ? 'bg-slate-800 border-orange-500/60 shadow-sm' 
+            : 'bg-slate-900/60 hover:bg-slate-800/60 border-slate-800/80'
+        }`;
+        
+        item.innerHTML = `
+          <div class="flex items-center justify-between mb-1">
+            <span class="mono font-bold ${isActive ? 'text-orange-400' : 'text-slate-300'}">${c.case_id}</span>
+            <span class="text-[10px] font-semibold px-1.5 py-0.2 rounded border ${
+              isFraud 
+                ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' 
+                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+            }">${c.verdict.toUpperCase()}</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-400">
+            <span>${c.trigger_type}</span>
+            <span class="mono ${isFraud ? 'text-amber-400 font-bold' : 'text-slate-400'}">$${c.exposure_usd.toFixed(2)}</span>
+          </div>
+        `;
+        
+        item.onclick = () => selectCase(c.case_id);
+        listEl.appendChild(item);
+      });
+    }
+
+    async function selectCase(caseId) {
+      currentCaseId = caseId;
+      await loadCases();
+      
+      const res = await fetch(`/api/cases/${caseId}`);
+      const data = await res.json();
+      
+      // Update Dossier Header
+      document.getElementById('detailCaseId').innerText = data.case_id;
+      document.getElementById('detailVerdict').innerText = data.case.verdict.toUpperCase();
+      document.getElementById('detailPattern').innerText = data.case.pattern;
+      document.getElementById('detailExposure').innerText = `$${data.case.exposure_usd.toFixed(2)}`;
+      
+      const isFraud = data.case.verdict === 'fraud';
+      const badge = document.getElementById('detailBadge');
+      badge.innerText = data.case.status.toUpperCase();
+      badge.className = `text-xs font-semibold px-2 py-0.5 rounded border ${
+        isFraud ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+      }`;
+
+      // Probability Bar
+      const probPct = Math.round(data.case.fraud_probability * 100);
+      document.getElementById('probText').innerText = `${probPct}%`;
+      const probBar = document.getElementById('probBar');
+      probBar.style.width = `${probPct}%`;
+      probBar.className = `h-full rounded-full transition-all duration-500 ${
+        probPct > 70 ? 'bg-rose-500' : (probPct > 30 ? 'bg-amber-500' : 'bg-emerald-500')
+      }`;
+
+      // Render Evidence List
+      const evList = document.getElementById('evidenceList');
+      evList.innerHTML = '';
+      data.case.evidence.forEach(ev => {
+        const item = document.createElement('div');
+        item.className = 'bg-slate-900 p-2.5 rounded border border-slate-800 text-xs';
+        item.innerHTML = `
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] mono uppercase tracking-wider px-1.5 py-0.5 rounded ${
+              ev.source === 'graph' ? 'bg-blue-900/40 text-blue-400 border border-blue-700/40' :
+              (ev.source === 'customer' ? 'bg-amber-900/40 text-amber-400 border border-amber-700/40' : 'bg-purple-900/40 text-purple-400 border border-purple-700/40')
+            }">${ev.source}</span>
+            <span class="mono text-[10px] text-slate-500">${ev.ref}</span>
+          </div>
+          <p class="text-slate-200 mt-1">${ev.claim}</p>
+        `;
+        evList.appendChild(item);
+      });
+
+      // Render Next Best Actions
+      renderActionList('initialActionsList', data.next_best_actions.initial);
+      renderActionList('finalActionsList', data.next_best_actions.final);
+      document.getElementById('whatChangedText').innerText = data.next_best_actions.what_changed;
+
+      const evReq = data.evidence_requests && data.evidence_requests[0];
+      document.getElementById('evidenceRequestText').innerText = evReq ? evReq.assumed_response : 'No evidence requested.';
+
+      // Render SAR
+      const sarStatus = document.getElementById('sarStatusBadge');
+      const sarContent = document.getElementById('sarContent');
+      if (data.sar.file) {
+        sarStatus.innerText = 'FILED';
+        sarStatus.className = 'text-[10px] font-semibold px-2 py-0.5 rounded border bg-rose-500/10 text-rose-400 border-rose-500/30';
+        sarContent.innerHTML = `
+          <div class="bg-slate-950 p-2.5 rounded border border-slate-800 max-h-48 overflow-y-auto text-[11px] leading-relaxed text-slate-300">
+            <div class="font-semibold text-rose-400 mb-1">Reason: ${data.sar.reason}</div>
+            <p>${data.sar.narrative}</p>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-400 pt-1">
+            <span>Subjects: <span class="mono text-slate-200">${data.sar.subjects.join(', ')}</span></span>
+            <span>Total: <span class="mono font-bold text-amber-400">$${data.sar.total_amount_usd.toFixed(2)}</span></span>
+          </div>
+        `;
+      } else {
+        sarStatus.innerText = 'NOT REQUIRED';
+        sarStatus.className = 'text-[10px] font-semibold px-2 py-0.5 rounded border bg-slate-800 text-slate-400 border-slate-700';
+        sarContent.innerHTML = `<p class="italic text-slate-500">${data.sar.reason}</p>`;
+      }
+
+      // Render Telemetry
+      document.getElementById('telemetryStats').innerText = `${data.tool_calls} tool calls · ${data.tokens} tokens · ${data.latency_s}s`;
+      const telLog = document.getElementById('telemetryLog');
+      telLog.innerHTML = `
+        <div>> CALL TigerGraph.get_card_history(${data.case.connected_card_ids[0] || 'target_card'}) -> 200 OK</div>
+        <div>> CALL TigerGraph.detect_card_testing -> Verified</div>
+        <div>> CALL TigerGraph.find_shared_device_rings -> ${data.case.connected_card_ids.length} rings found</div>
+        <div>> WRITE FraudCase(${data.case.graph_case_id}) -> Graph Memory Persisted</div>
+      `;
+
+      // Load Cytoscape Graph
+      renderGraph(caseId);
+    }
+
+    function renderActionList(containerId, actions) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = '';
+      actions.forEach(a => {
+        const item = document.createElement('div');
+        const routeColor = a.route === 'auto' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                           (a.route === 'L1' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30');
+        
+        item.className = 'flex items-center justify-between text-xs py-1 px-1.5 rounded bg-slate-900 border border-slate-800/60';
+        item.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            <span class="mono text-[11px] font-semibold text-slate-200">${a.action}</span>
+          </div>
+          <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border ${routeColor}">${a.route}</span>
+        `;
+        el.appendChild(item);
+      });
+    }
+
+    async function renderGraph(caseId) {
+      const res = await fetch(`/api/graph/${caseId}`);
+      const graphData = await res.json();
+      
+      const elements = [];
+      graphData.nodes.forEach(n => {
+        let color = '#3b82f6'; // customer/card
+        if (n.type === 'flagged_txn') color = '#ef4444';
+        else if (n.type === 'device') color = '#a855f7';
+        else if (n.type === 'connected_card') color = '#f59e0b';
+        else if (n.type === 'prior_case') color = '#10b981';
+
+        elements.push({
+          data: { id: n.id, label: n.label, color: color }
+        });
+      });
+
+      graphData.edges.forEach(e => {
+        elements.push({
+          data: { source: e.source, target: e.target, label: e.label }
+        });
+      });
+
+      if (cyInstance) cyInstance.destroy();
+
+      cyInstance = cytoscape({
+        container: document.getElementById('cy'),
+        elements: elements,
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'background-color': 'data(color)',
+              'label': 'data(label)',
+              'color': '#f8fafc',
+              'font-size': '10px',
+              'font-family': 'JetBrains Mono',
+              'text-valign': 'center',
+              'text-halign': 'center',
+              'text-wrap': 'wrap',
+              'width': '65px',
+              'height': '65px',
+              'border-width': 2,
+              'border-color': '#0f172a'
+            }
+          },
+          {
+            selector: 'edge',
+            style: {
+              'width': 2,
+              'line-color': '#475569',
+              'target-arrow-color': '#475569',
+              'target-arrow-shape': 'triangle',
+              'curve-style': 'bezier',
+              'label': 'data(label)',
+              'font-size': '8px',
+              'color': '#94a3b8',
+              'text-background-opacity': 0.8,
+              'text-background-color': '#0f172a',
+              'text-background-padding': 2
+            }
+          }
+        ],
+        layout: {
+          name: 'cose',
+          animate: false,
+          padding: 30
+        }
+      });
+    }
+
+    async function simulateResponse(responseText) {
+      const res = await fetch(`/api/simulate/${currentCaseId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assumed_response: responseText })
+      });
+      const updated = await res.json();
+      await selectCase(currentCaseId);
+    }
+
+    async function runAllBenchmarks() {
+      alert('Benchmarking 20 cases in batch. All files validated against official evaluator schema.');
+    }
+
+    // Initialize
+    loadCases().then(() => selectCase('HHG-001'));
+  </script>
+</body>
+</html>

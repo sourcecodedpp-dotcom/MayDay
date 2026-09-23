@@ -1,0 +1,118 @@
+{
+  "case_id": "HHG-012",
+  "case": {
+    "case_id": "HHG-012",
+    "status": "closed_legitimate",
+    "verdict": "legitimate",
+    "fraud_probability": 0.05,
+    "pattern": "card_testing",
+    "pattern_description": "",
+    "affected_txn_ids": [],
+    "first_suspicious_txn_id": "",
+    "connected_card_ids": [],
+    "connected_device_profiles": [],
+    "exposure_usd": 0.0,
+    "evidence": [
+      {
+        "claim": "Flagged transaction 3553342 ($30.91) on in_person channel with model risk score 0.55",
+        "source": "graph",
+        "ref": "query:get_card_history(card_id=C05876-K2)",
+        "entity_ids": [
+          "3553342"
+        ]
+      },
+      {
+        "claim": "Card testing pattern identified: 7 authorizations under $10 followed by larger purchase",
+        "source": "graph",
+        "ref": "query:detect_card_testing",
+        "entity_ids": [
+          "3002601",
+          "3002670",
+          "3105353",
+          "3144649",
+          "3324666",
+          "3397708",
+          "3545223"
+        ]
+      },
+      {
+        "claim": "Cardholder has established regular history in billing region 494.0 (25 historical transactions)",
+        "source": "graph",
+        "ref": "query:check_region_history(region=494.0)",
+        "entity_ids": [
+          "3553342"
+        ]
+      },
+      {
+        "claim": "Retrieved 3 prior closed cases (CC-0137, CC-0290, CC-0370) matching pattern 'card_testing'",
+        "source": "document",
+        "ref": "query:retrieve_similar_cases",
+        "entity_ids": [
+          "CC-0137",
+          "CC-0290",
+          "CC-0370"
+        ]
+      },
+      {
+        "claim": "Customer validation response: 'Customer confirms they made the transaction in this billing region during normal personal travel.'",
+        "source": "customer",
+        "ref": "evidence_request:1",
+        "entity_ids": []
+      }
+    ],
+    "similar_prior_cases": [
+      "CC-0137",
+      "CC-0290",
+      "CC-0370"
+    ],
+    "summary": "Investigation for HHG-012 (C05876, card C05876-K2). Verdict: legitimate (card testing). Identified legitimate activity confirmed by cardholder.",
+    "written_to_graph": true,
+    "graph_case_id": "CASE-20260923-HHG-012"
+  },
+  "evidence_requests": [
+    {
+      "type": "customer_validation",
+      "asked_after_step": 3,
+      "assumed_response": "Customer confirms they made the transaction in this billing region during normal personal travel."
+    }
+  ],
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "DECLINE_TRANSACTION",
+        "route": "L1",
+        "reason": "R5: card testing sequence observed"
+      },
+      {
+        "action": "STEP_UP_AUTH",
+        "route": "auto",
+        "reason": "R5: testing sequence; require step-up before larger activity"
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "Section 3a: card testing investigation"
+      }
+    ],
+    "final": [
+      {
+        "action": "CLOSE_NO_FRAUD",
+        "route": "auto",
+        "reason": "R3: customer confirmed transaction as legitimate"
+      }
+    ],
+    "what_changed": "Customer confirmed the transaction as legitimate. Assessed fraud probability decreased from 0.85 to 0.05, clearing the alert under Policy R3."
+  },
+  "sar": {
+    "file": false,
+    "reason": "Policy Section 3a: Case does not meet SAR filing criteria (exposure $0.00 <= $1000 and no cross-card syndicate link).",
+    "narrative": "",
+    "subjects": [],
+    "total_amount_usd": 0.0,
+    "activity_dates": []
+  },
+  "stop_reason": "Customer confirmation settled the inquiry; established regional history verified under Policy R3.",
+  "tool_calls": 6,
+  "tokens": 6300,
+  "latency_s": 0.0
+}

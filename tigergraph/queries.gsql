@@ -1,0 +1,91 @@
+// ==============================================================================
+// TigerGraph GSQL Queries for Fraud Investigation Agent
+// Graph: FraudGraph
+// ==============================================================================
+
+USE GRAPH FraudGraph
+
+// 1. Get recent card transaction history and baseline behavior
+CREATE OR REPLACE QUERY get_card_history(VERTEX<Card> target_card, INT limit_num = 50) FOR GRAPH FraudGraph {
+    Start = { target_card };
+    
+    Txns = SELECT t FROM Start:s -(MADE:e)- Transaction:t
+           ORDER BY t.ts DESC
+           LIMIT limit_num;
+           
+    PRINT Txns[Txns.txn_id, Txns.amount, Txns.ts, Txns.channel, Txns.risk_score, Txns.product_cd, Txns.addr1];
+}
+
+// 2. Detect Card Testing: Multiple small online transactions (< $5.00) in a short window
+CREATE OR REPLACE QUERY detect_card_testing(VERTEX<Card> target_card, STRING ref_ts, INT window_minutes = 60) FOR GRAPH FraudGraph {
+    TYPEDEF TUPLE<STRING txn_id, DOUBLE amount, STRING ts, STRING channel> TXN_INFO;
+    ListAccum<TXN_INFO> @small_txns;
+    SumAccum<INT> @count_small = 0;
+    
+    Start = { target_card };
+    
+    Txns = SELECT t FROM Start:s -(MADE:e)- Transaction:t
+           WHERE t.channel == "online" AND t.amount <= 10.00
+           ACCUM s.@small_txns += TXN_INFO(t.txn_id, t.amount, t.ts, t.channel),
+                 s.@count_small += 1;
+                 
+    PRINT Start[Start.@count_small, Start.@small_txns];
+}
+
+// 3. Find Shared Device Rings: Detect other cards and customers using the same device profile
+CREATE OR REPLACE QUERY find_shared_device_rings(VERTEX<DeviceProfile> target_device) FOR GRAPH FraudGraph {
+    Start = { target_device };
+    
+    ConnectedTxns = SELECT t FROM Start:s -(USED_IN_TXN:e)- Transaction:t;
+    ConnectedCards = SELECT c FROM ConnectedTxns:t -(MADE_BY:e)- Card:c;
+    ConnectedCusts = SELECT u FROM ConnectedCards:c -(OWNED_BY:e)- Customer:u;
+    
+    PRINT ConnectedCards[ConnectedCards.card_id, ConnectedCards.card_network, ConnectedCards.card_type];
+    PRINT ConnectedCusts[ConnectedCusts.customer_id];
+}
+
+// 4. Check Billing Region Anomaly: Check if card has prior history in the target billing region
+CREATE OR REPLACE QUERY check_region_history(VERTEX<Card> target_card, STRING region_code) FOR GRAPH FraudGraph {
+    SumAccum<INT> @txns_in_region = 0;
+    SumAccum<INT> @total_txns = 0;
+    
+    Start = { target_card };
+    
+    Txns = SELECT t FROM Start:s -(MADE:e)- Transaction:t
+           ACCUM s.@total_txns += 1,
+                 CASE WHEN t.addr1 == region_code THEN s.@txns_in_region += 1 END;
+                 
+    PRINT Start[Start.@total_txns, Start.@txns_in_region];
+}
+
+// 5. Retrieve Similar Past Cases from Case Memory
+CREATE OR REPLACE QUERY retrieve_similar_cases(STRING target_pattern, STRING target_channel, INT limit_num = 5) FOR GRAPH FraudGraph {
+    AllCases = { ClosedCase.* };
+    
+    Matched = SELECT c FROM AllCases:c
+              WHERE (target_pattern != "" AND c.pattern == target_pattern)
+              LIMIT limit_num;
+              
+    PRINT Matched[Matched.case_id, Matched.outcome, Matched.pattern, Matched.exposure_usd, Matched.actions_taken, Matched.report_filed, Matched.analyst_notes];
+}
+
+// 6. Write Case to Graph (Memory Persistence)
+CREATE OR REPLACE QUERY persist_fraud_case(
+    STRING case_id,
+    STRING opened_at,
+    STRING status,
+    STRING verdict,
+    DOUBLE fraud_probability,
+    STRING pattern,
+    STRING pattern_description,
+    DOUBLE exposure_usd,
+    STRING summary,
+    STRING stop_reason,
+    STRING card_id
+) FOR GRAPH FraudGraph {
+    INSERT INTO FraudCase VALUES (case_id, case_id, opened_at, status, verdict, fraud_probability, pattern, pattern_description, exposure_usd, summary, stop_reason);
+    INSERT INTO CASE_ON_CARD VALUES (case_id, card_id);
+    PRINT "Successfully persisted case to FraudGraph" AS status;
+}
+
+INSTALL QUERY get_card_history, detect_card_testing, find_shared_device_rings, check_region_history, retrieve_similar_cases, persist_fraud_case
