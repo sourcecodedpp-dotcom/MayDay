@@ -1,7 +1,20 @@
+import os
+import sys
+from pathlib import Path
 import json
 import sqlite3
 import pandas as pd
-from engine.investigator import FraudInvestigatorAgent
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+BACKEND_DIR = ROOT_DIR / "backend"
+for p in [str(ROOT_DIR), str(BACKEND_DIR)]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+try:
+    from backend.engine.investigator import FraudInvestigatorAgent
+except ImportError:
+    from engine.investigator import FraudInvestigatorAgent
 
 # Load case metadata for HHG-001
 conn = sqlite3.connect('data/investigation.db')

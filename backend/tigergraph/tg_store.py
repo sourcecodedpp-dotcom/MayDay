@@ -11,6 +11,10 @@ class TigerGraphStore:
     with seamless local execution against the indexed FraudGraph dataset.
     """
     def __init__(self, db_path: str = "data/investigation.db", host: Optional[str] = None):
+        if not os.path.exists(db_path):
+            alt_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "investigation.db"))
+            if os.path.exists(alt_path):
+                db_path = alt_path
         self.db_path = db_path
         self.host = host or os.getenv("TIGERGRAPH_HOST")
         self.username = os.getenv("TIGERGRAPH_USERNAME", "tigergraph")

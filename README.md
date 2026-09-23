@@ -24,27 +24,30 @@ In response to the **Hacker House Goa 2026** challenge, this system automates en
 ## Repository Structure
 
 ```text
-├── cases/                     # The 20 benchmark answer JSON files (HHG-001 to HHG-020)
-├── data/                      # Dataset files (case pack, closed cases, transactions, identity)
-├── engine/
-│   ├── investigator.py        # Core cognitive investigation agent loop
-│   ├── policy_engine.py       # Deterministic Bank Fraud Policy Engine (Rules R1 to R10)
-│   └── sar_generator.py       # Regulatory SAR narrative generator (Section 3a)
-├── tigergraph/
-│   ├── schema.gsql            # Graph schema DDL (Vertices & Edges)
-│   ├── queries.gsql           # GSQL queries (rings, testing, region history, case memory)
-│   ├── tg_store.py            # TigerGraph store and Savanna connector
-│   └── mcp_tools.py           # TigerGraph MCP tool provider with auditable telemetry
-├── server/
-│   └── app.py                 # FastAPI backend server
-├── frontend/
-│   └── dist/index.html        # Interactive cyber-forensics analyst terminal (Cytoscape graph)
-├── scripts/
-│   ├── run_benchmarks.py      # Batch benchmark runner for all 20 cases
-│   ├── validate_answers.py    # Strict official schema validator
-│   └── test_single_case.py    # End-to-end single case test script
-├── BLOG_POST.md               # Technical blog post for submission
-└── SUBMISSION.md              # Submission guide, checklist, and social media copy
+├── backend/                       # Python Backend Service
+│   ├── app.py                     # FastAPI server & cockpit API endpoints
+│   ├── engine/                    # Core agentic reasoning & policy engine
+│   │   ├── investigator.py        # Autonomous cognitive agent loop
+│   │   ├── policy_engine.py       # Deterministic bank rules (R1 to R10)
+│   │   └── sar_generator.py       # FinCEN SAR narrative generation
+│   └── tigergraph/                # TigerGraph layer
+│       ├── schema.gsql            # Graph schema DDL
+│       ├── queries.gsql           # GSQL graph queries
+│       ├── tg_store.py            # TigerGraph connector & graph store
+│       └── mcp_tools.py           # TigerGraph MCP tools & telemetry
+│
+├── frontend/                      # Frontend Dashboard
+│   └── index.html                 # Interactive cyber-forensics analyst terminal (Cytoscape graph)
+│
+├── cases/                         # 20 Benchmark evaluation answer files (HHG-001 to HHG-020)
+├── data/                          # Shared datasets (SQLite graph store, CSVs)
+├── scripts/                       # Benchmark runners & official validator
+│   ├── run_benchmarks.py          # 20-case batch runner
+│   ├── validate_answers.py        # Official schema validator
+│   └── test_single_case.py        # Single case investigator test
+├── requirements.txt               # Project dependencies
+├── BLOG_POST.md                   # Technical blog post for submission
+└── SUBMISSION.md                  # Submission guide, checklist, and social media copy
 ```
 
 ---
@@ -61,19 +64,19 @@ pip install -r requirements.txt
 ### 2. Run the 20 Benchmark Cases
 To regenerate and validate the 20 official submission answer files in `cases/*.json`:
 ```bash
-PYTHONPATH=. python scripts/run_benchmarks.py
+python scripts/run_benchmarks.py
 ```
 
 ### 3. Validate Answer Files
 To test the generated JSON files against every rule in the official evaluator:
 ```bash
-PYTHONPATH=. python scripts/validate_answers.py
+python scripts/validate_answers.py
 ```
 
 ### 4. Launch the Analyst Cockpit UI
 Start the backend server and open the interactive dashboard:
 ```bash
-PYTHONPATH=. uvicorn server.app:app --host 0.0.0.0 --port 8000
+uvicorn backend.app:app --host 0.0.0.0 --port 8000
 ```
 Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
