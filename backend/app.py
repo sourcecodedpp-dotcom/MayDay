@@ -36,11 +36,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_no_cache_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 agent = FraudInvestigatorAgent()
 
 DB_PATH = str(BASE_DIR / "data" / "investigation.db")
 CASES_DIR = str(BASE_DIR / "cases")
 FRONTEND_FILE = str(BASE_DIR / "frontend" / "index.html")
+
+if (BASE_DIR / "src").exists():
+    app.mount("/src", StaticFiles(directory=str(BASE_DIR / "src")), name="src")
 
 class SimulateRequest(BaseModel):
     assumed_response: str
@@ -162,5 +173,5 @@ def simulate_case_evidence(case_id: str, req: SimulateRequest):
 @app.get("/")
 def get_dashboard():
     if os.path.exists(FRONTEND_FILE):
-        return FileResponse(FRONTEND_FILE)
+        return FileResponse(FRONTEND_FILE, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
     return JSONResponse({"message": "Frontend not found", "docs": "/docs"})

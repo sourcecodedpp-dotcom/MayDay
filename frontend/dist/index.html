@@ -3,302 +3,154 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MAY</title>
+  <title>MAY // Team MAYDAY</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" />
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-
     * {
       box-sizing: border-box;
+    }
+    body {
       margin: 0;
       padding: 0;
-      font-family: 'Inter', sans-serif;
-    }
-
-    body {
-      background-color: #000000;
-      color: #ffffff;
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background-color: #0b0b0d;
+      color: #e4e4e7;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
-
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
     .prompt-scrollbar::-webkit-scrollbar {
-      width: 4px;
-      height: 4px;
-      background: transparent;
+      display: none;
+      width: 0px;
+      height: 0px;
     }
-    .prompt-scrollbar::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .prompt-scrollbar::-webkit-scrollbar-thumb {
-      background: transparent;
-      border-radius: 4px;
-    }
-    .prompt-scrollbar:hover::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
+    .prompt-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
   </style>
 </head>
-<body class="bg-black text-white">
-  <div id="root" class="h-screen w-screen flex items-center justify-center p-4"></div>
+<body class="bg-[#0b0b0d] text-[#e4e4e7] min-h-screen">
+  <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useRef, useEffect, useCallback } = React;
+  <!-- Entry Point Loader: Loads modular React + TypeScript application from src/main.tsx -->
+  <script>
+    (function() {
+      const moduleCache = new Map();
+      moduleCache.set('react', React);
+      moduleCache.set('react-dom', ReactDOM);
+      moduleCache.set('react-dom/client', ReactDOM);
 
-    function cn(...classes) {
-      return classes.filter(Boolean).join(" ");
-    }
-
-    function MorphingText({ text }) {
-      const [width, setWidth] = useState("auto");
-      const spanRef = useRef(null);
-      useEffect(() => {
-        if (spanRef.current) {
-          setWidth(spanRef.current.offsetWidth);
+      async function loadTsxModule(url, baseDir = '/src/') {
+        let resolvedUrl = url;
+        if (!resolvedUrl.startsWith('http') && !resolvedUrl.startsWith('/')) {
+          resolvedUrl = baseDir + resolvedUrl;
         }
-      }, [text]);
-      return (
-        <span
-          className="relative inline-flex items-center justify-center overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]"
-          style={{ width }}
-        >
-          <span ref={spanRef} className="invisible whitespace-nowrap px-1">
-            {text}
-          </span>
-          <span
-            key={text}
-            className="absolute inset-0 flex items-center justify-center whitespace-nowrap"
-          >
-            {text}
-          </span>
-        </span>
-      );
-    }
+        if (!resolvedUrl.endsWith('.tsx') && !resolvedUrl.endsWith('.ts') && !resolvedUrl.endsWith('.js')) {
+          resolvedUrl = resolvedUrl + '.tsx';
+        }
 
-    function ModelIcon({ model, className }) {
-      const icons = {
-        "Composer 2.5": "https://cdn.21st.dev/assets/mirror/7d/7dc00bc09f225fcda46cbc9c6b669c69c025a231877d6c17baa6a003f04f02b2.svg",
-        "Gemini 3.5 Flash": "https://cdn.21st.dev/assets/mirror/cd/cda2df6631d5fa227de3fa04ed78cf354f910ba92a9f086e7455655c10ad9d09.svg",
-        "GPT 5.5": "https://cdn.21st.dev/assets/mirror/b9/b93fa7942be639a1dae60194ff12141145d7d9fd59581582d6ff23335755f19c.svg",
-        "Opus 4.8": "https://cdn.21st.dev/assets/mirror/5d/5de1221c77cc91e748066fd642ad0eee1c1fa65328814f5178166f901e599709.svg",
-        "GLM 5.2": "https://cdn.21st.dev/assets/mirror/b2/b2a6c0ff63efd8a555edf8a174ea6fcfeca120ac1595a2d461ca11d3ae89276c.svg"
-      };
-      return (
-        <img 
-          src={icons[model] || icons["GPT 5.5"]} 
-          alt={model} 
-          className={cn("object-contain invert", className)} 
-        />
-      );
-    }
+        if (moduleCache.has(resolvedUrl)) {
+          return moduleCache.get(resolvedUrl);
+        }
 
-    function ArrowUpIcon() {
-      return (
-        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M7 12V2M7 2L2.5 6.5M7 2L11.5 6.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      );
-    }
+        const cacheBuster = `?t=${Date.now()}`;
+        let res = await fetch(resolvedUrl + cacheBuster, { cache: 'no-store' });
+        if (!res.ok && resolvedUrl.endsWith('.tsx')) {
+          const altUrl = resolvedUrl.replace(/\.tsx$/, '.ts');
+          res = await fetch(altUrl + cacheBuster, { cache: 'no-store' });
+          if (res.ok) resolvedUrl = altUrl;
+        }
+        if (!res.ok) throw new Error(`Failed to load module: ${resolvedUrl}`);
 
-    function MicIcon() {
-      return (
-        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <rect x="5" y="1" width="4" height="7" rx="2" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M2.75 6.5V7a4.25 4.25 0 0 0 8.5 0v-.5M7 11.25V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-      );
-    }
+        const code = await res.text();
+        const currentDir = resolvedUrl.substring(0, resolvedUrl.lastIndexOf('/') + 1);
 
-    function DynamicBarsIcon({ level }) {
-      const isMediumOrHigh = level === "Medium" || level === "Max Effort";
-      const isHigh = level === "Max Effort";
-      return (
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <rect x="1.5" y="8" width="2.5" height="4.5" rx="1" fill="currentColor" opacity={1} />
-          <rect x="5.75" y="5" width="2.5" height="7.5" rx="1" fill="currentColor" opacity={isMediumOrHigh ? 1 : 0.3} />
-          <rect x="10" y="2" width="2.5" height="10.5" rx="1" fill="currentColor" opacity={isHigh ? 1 : 0.3} />
-        </svg>
-      );
-    }
+        const transformed = Babel.transform(code, {
+          presets: [
+            ['react'],
+            ['typescript', { isTSX: true, allExtensions: true }]
+          ],
+          plugins: [
+            ['transform-modules-commonjs']
+          ],
+          filename: resolvedUrl
+        }).code;
 
-    function PromptInput({
-      onSubmit,
-      placeholder = "Ask anything",
-      className,
-      models = ["GPT 5.5", "Opus 4.8", "Gemini 3.5 Flash", "Composer 2.5", "GLM 5.2"],
-      efforts = ["Low", "Medium", "Max Effort"],
-    }) {
-      const [value, setValue] = useState("");
-      const [selectedModel, setSelectedModel] = useState(models[0]);
-      const [effortIndex, setEffortIndex] = useState(0); // "Low" by default as in screenshot
-      const [isModelSelectOpen, setIsModelSelectOpen] = useState(false);
-      const [containerHeight, setContainerHeight] = useState(116);
-      const [textareaHeight, setTextareaHeight] = useState(68);
+        const exports = {};
+        const module = { exports };
+        moduleCache.set(resolvedUrl, exports);
 
-      const textareaRef = useRef(null);
-      const internalContainerRef = useRef(null);
+        const customRequire = (specifier) => {
+          if (specifier === 'react') return React;
+          if (specifier === 'react-dom' || specifier === 'react-dom/client') return ReactDOM;
 
-      const hasValue = value.trim() !== "";
-
-      useEffect(() => {
-        if (!textareaRef.current) return;
-        const el = textareaRef.current;
-        el.style.height = "0px";
-        const scrollHeight = el.scrollHeight;
-        const newHeight = Math.max(68, Math.min(scrollHeight, 180));
-        el.style.height = `${newHeight}px`;
-        setTextareaHeight(newHeight);
-        setContainerHeight(Math.max(116, newHeight + 48));
-      }, [value]);
-
-      useEffect(() => {
-        if (!isModelSelectOpen) return;
-        const handleOutsideClick = (e) => {
-          if (internalContainerRef.current && !internalContainerRef.current.contains(e.target)) {
-            setIsModelSelectOpen(false);
+          let target = specifier;
+          if (target.startsWith('.')) {
+            const parts = (currentDir + target).split('/');
+            const stack = [];
+            for (const p of parts) {
+              if (p === '' || p === '.') continue;
+              if (p === '..') stack.pop();
+              else stack.push(p);
+            }
+            target = '/' + stack.join('/');
           }
+          if (moduleCache.has(target)) return moduleCache.get(target);
+          if (moduleCache.has(target + '.tsx')) return moduleCache.get(target + '.tsx');
+          if (moduleCache.has(target + '.ts')) return moduleCache.get(target + '.ts');
+
+          throw new Error(`Module not found in require: ${specifier} (resolved: ${target})`);
         };
-        document.addEventListener("mousedown", handleOutsideClick);
-        return () => document.removeEventListener("mousedown", handleOutsideClick);
-      }, [isModelSelectOpen]);
 
-      const handleSubmit = () => {
-        if (!hasValue) return;
-        onSubmit?.(value, { model: selectedModel, effort: efforts[effortIndex] });
-        setValue("");
-        setIsModelSelectOpen(false);
-      };
+        // Pre-fetch dependencies
+        const importRegex = /require\(["']([^"']+)["']\)/g;
+        let match;
+        const deps = [];
+        while ((match = importRegex.exec(transformed)) !== null) {
+          const dep = match[1];
+          if (dep !== 'react' && dep !== 'react-dom' && dep !== 'react-dom/client') {
+            deps.push(dep);
+          }
+        }
 
-      const cycleEffort = (e) => {
-        e.stopPropagation();
-        setEffortIndex((prev) => (prev + 1) % efforts.length);
-      };
+        for (const dep of deps) {
+          let depUrl = dep;
+          if (depUrl.startsWith('.')) {
+            const parts = (currentDir + depUrl).split('/');
+            const stack = [];
+            for (const p of parts) {
+              if (p === '' || p === '.') continue;
+              if (p === '..') stack.pop();
+              else stack.push(p);
+            }
+            depUrl = '/' + stack.join('/');
+          }
+          await loadTsxModule(depUrl, currentDir);
+        }
 
-      return (
-        <div
-          ref={internalContainerRef}
-          className={cn("relative flex flex-col w-full", className)}
-          style={{
-            maxWidth: 680, // Expanded width sidewise
-            width: "100%",
-          }}
-        >
-          <div
-            style={{
-              borderRadius: 22,
-              height: containerHeight,
-              overflow: "visible",
-            }}
-            className="relative w-full border border-[#262626] bg-[#050505] focus-within:border-[#404040] transition-colors"
-          >
-            {/* Textarea */}
-            <textarea
-              ref={textareaRef}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit();
-                }
-              }}
-              placeholder={placeholder}
-              aria-label="Prompt"
-              autoFocus
-              className="prompt-scrollbar absolute top-0 inset-x-0 w-full resize-none bg-transparent pl-5 pr-14 py-4 text-sm leading-[22px] text-white outline-none placeholder:text-[#555555] cursor-text"
-            />
+        const fn = new Function('require', 'module', 'exports', 'React', 'ReactDOM', transformed);
+        fn(customRequire, module, exports, React, ReactDOM);
 
-            {/* Bottom Actions Bar */}
-            <div className="absolute bottom-2.5 left-4 right-14 flex items-center gap-1.5 pointer-events-auto">
-              {/* Model Dropdown Button */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsModelSelectOpen((prev) => !prev);
-                  }}
-                  className={cn(
-                    "group flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white/60 transition-all outline-none hover:bg-[#141414] hover:text-white cursor-pointer",
-                    isModelSelectOpen ? "bg-[#141414] text-white" : ""
-                  )}
-                >
-                  <ModelIcon model={selectedModel} className="size-3.5 opacity-80 group-hover:opacity-100" />
-                  <span className="text-xs font-medium select-none">
-                    <MorphingText text={selectedModel} />
-                  </span>
-                </button>
+        return module.exports;
+      }
 
-                {isModelSelectOpen && (
-                  <div className="absolute bottom-full left-0 mb-2 z-50 w-44 rounded-xl border border-[#262626] bg-[#0a0a0a] p-1 shadow-2xl flex flex-col gap-0.5">
-                    {models.map((model) => (
-                      <button
-                        key={model}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedModel(model);
-                          setIsModelSelectOpen(false);
-                        }}
-                        className="group flex h-8 w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-white/80 hover:bg-[#1a1a1a] hover:text-white outline-none cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2">
-                          <ModelIcon model={model} className="size-3.5 opacity-80 group-hover:opacity-100" />
-                          {model}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Effort Button */}
-              <button
-                type="button"
-                onClick={cycleEffort}
-                className="group flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white/60 transition-all hover:bg-[#141414] hover:text-white outline-none cursor-pointer"
-              >
-                <DynamicBarsIcon level={efforts[effortIndex]} />
-                <span className="text-xs font-medium select-none">
-                  <MorphingText text={efforts[effortIndex]} />
-                </span>
-              </button>
+      loadTsxModule('/src/main.tsx')
+        .catch(err => {
+          console.error('Error bootstrapping May application:', err);
+          document.getElementById('root').innerHTML = `
+            <div style="padding: 24px; color: #ef4444; font-family: monospace;">
+              <h3>Failed to load May interface</h3>
+              <pre>${err.message}</pre>
             </div>
-
-            {/* Mic / Send Action Button (White Circle) */}
-            <button
-              type="button"
-              onClick={handleSubmit}
-              className="absolute right-3 bottom-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-black hover:bg-[#e0e0e0] transition-transform active:scale-95 outline-none cursor-pointer shadow-md"
-            >
-              {hasValue ? <ArrowUpIcon /> : <MicIcon />}
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    function App() {
-      const handleSendMessage = (message, meta) => {
-        console.log("Submitted:", message, meta);
-      };
-
-      return (
-        <div className="flex h-screen w-screen items-center justify-center bg-black">
-          <PromptInput onSubmit={handleSendMessage} placeholder="Ask anything" />
-        </div>
-      );
-    }
-
-    ReactDOM.render(<App />, document.getElementById("root"));
+          `;
+        });
+    })();
   </script>
 </body>
 </html>
