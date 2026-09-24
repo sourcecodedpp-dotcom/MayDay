@@ -3,52 +3,104 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MAY // MAYDAY — TigerGraph Fraud Agent</title>
+  <title>MAY</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
-    
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Inter', sans-serif;
     }
 
     body {
       background-color: #000000;
       color: #ffffff;
       height: 100vh;
+      width: 100vw;
       overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Custom scrollbars */
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: #000000; }
-    ::-webkit-scrollbar-thumb { background: #333333; }
-    ::-webkit-scrollbar-thumb:hover { background: #555555; }
+    .prompt-scrollbar::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+      background: transparent;
+    }
+    .prompt-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .prompt-scrollbar::-webkit-scrollbar-thumb {
+      background: transparent;
+      border-radius: 4px;
+    }
+    .prompt-scrollbar:hover::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 <body class="bg-black text-white">
-  <div id="root" class="h-screen w-screen flex flex-col justify-between"></div>
+  <div id="root" class="h-screen w-screen flex items-center justify-center"></div>
 
   <script type="text/babel">
     const { useState, useRef, useEffect, useCallback } = React;
 
-    // Helper cn
+    const SPRING_TRANSITION = "max-width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+    const SMOOTH_HEIGHT_TRANSITION = "max-width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), height 0.15s ease-out";
+
     function cn(...classes) {
       return classes.filter(Boolean).join(" ");
     }
 
-    // ----------------------------------------------------------------------
-    // Sub-components & Icons
-    // ----------------------------------------------------------------------
     function MorphingText({ text }) {
-      return <span>{text}</span>;
+      const [width, setWidth] = useState("auto");
+      const spanRef = useRef(null);
+      useEffect(() => {
+        if (spanRef.current) {
+          setWidth(spanRef.current.offsetWidth);
+        }
+      }, [text]);
+      return (
+        <span
+          className="relative inline-flex items-center justify-center overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]"
+          style={{ width }}
+        >
+          <span ref={spanRef} className="invisible whitespace-nowrap px-1">
+            {text}
+          </span>
+          <span
+            key={text}
+            className="absolute inset-0 flex items-center justify-center whitespace-nowrap"
+          >
+            {text}
+          </span>
+        </span>
+      );
+    }
+
+    function ModelIcon({ model, className }) {
+      const icons = {
+        "Composer 2.5": "https://cdn.21st.dev/assets/mirror/7d/7dc00bc09f225fcda46cbc9c6b669c69c025a231877d6c17baa6a003f04f02b2.svg",
+        "Gemini 3.5 Flash": "https://cdn.21st.dev/assets/mirror/cd/cda2df6631d5fa227de3fa04ed78cf354f910ba92a9f086e7455655c10ad9d09.svg",
+        "GPT 5.5": "https://cdn.21st.dev/assets/mirror/b9/b93fa7942be639a1dae60194ff12141145d7d9fd59581582d6ff23335755f19c.svg",
+        "Opus 4.8": "https://cdn.21st.dev/assets/mirror/5d/5de1221c77cc91e748066fd642ad0eee1c1fa65328814f5178166f901e599709.svg",
+        "GLM 5.2": "https://cdn.21st.dev/assets/mirror/b2/b2a6c0ff63efd8a555edf8a174ea6fcfeca120ac1595a2d461ca11d3ae89276c.svg"
+      };
+      return (
+        <img 
+          src={icons[model] || icons["GPT 5.5"]} 
+          alt={model} 
+          className={cn("object-contain invert", className)} 
+        />
+      );
     }
 
     function ArrowUpIcon() {
@@ -96,34 +148,118 @@
       );
     }
 
-    // ----------------------------------------------------------------------
-    // The Centered AI Chat Input Component (21st.dev @jahed/ai-chat-input)
-    // Monochromatic Anti-Slop Adaptation
-    // ----------------------------------------------------------------------
-    function PromptInput({ onSubmit, placeholder = "Investigate case, e.g. HHG-001 or ask MAY..." }) {
+    function PromptInput({
+      onSubmit,
+      placeholder = "Ask anything",
+      className,
+      models = ["GPT 5.5", "Opus 4.8", "Gemini 3.5 Flash", "Composer 2.5", "GLM 5.2"],
+      efforts = ["Low", "Medium", "Max Effort"],
+    }) {
       const [expanded, setExpanded] = useState(false);
+      const [isSmoothResize, setIsSmoothResize] = useState(false);
       const [value, setValue] = useState("");
-      const [selectedModel, setSelectedModel] = useState("TigerGraph GSQL");
+      const [selectedModel, setSelectedModel] = useState(models[0]);
       const [effortIndex, setEffortIndex] = useState(1);
       const [isModelSelectOpen, setIsModelSelectOpen] = useState(false);
       const [isRecording, setIsRecording] = useState(false);
       const [audioData, setAudioData] = useState(new Array(5).fill(0));
-
-      const models = ["TigerGraph GSQL", "GraphRAG Reasoner", "FinCEN Policy Engine", "Louvain Community"];
-      const efforts = ["Fast Triage", "Deep Graph Walk", "Max Corroboration"];
+      const [containerHeight, setContainerHeight] = useState(116);
+      const [textareaHeight, setTextareaHeight] = useState(68);
+      const [isScrolling, setIsScrolling] = useState(false);
 
       const textareaRef = useRef(null);
-      const containerRef = useRef(null);
+      const internalContainerRef = useRef(null);
+      const topFadeRef = useRef(null);
+      const bottomFadeRef = useRef(null);
 
       const hasValue = value.trim() !== "";
 
-      const expand = () => setExpanded(true);
+      const updateFades = () => {
+        const el = textareaRef.current;
+        if (!el) return;
+        const { scrollTop, scrollHeight, clientHeight } = el;
+        if (topFadeRef.current) {
+          topFadeRef.current.style.opacity = Math.min(scrollTop / 20, 1).toString();
+        }
+        if (bottomFadeRef.current) {
+          const bottomScroll = scrollHeight - clientHeight - scrollTop;
+          bottomFadeRef.current.style.opacity = Math.min(Math.max(bottomScroll - 16, 0) / 10, 1).toString();
+        }
+      };
+
+      const handleValueChange = (val) => {
+        setIsSmoothResize(true);
+        setValue(val);
+      };
+
+      const expand = () => {
+        setIsSmoothResize(false);
+        setExpanded(true);
+      };
+
+      useEffect(() => {
+        if (value.trim() !== "" && !expanded) {
+          setIsSmoothResize(false);
+          setExpanded(true);
+        }
+      }, [value, expanded]);
+
+      useEffect(() => {
+        if (expanded && !isRecording && textareaRef.current) {
+          textareaRef.current.focus();
+        }
+      }, [expanded, isRecording]);
+
+      useEffect(() => {
+        if (!textareaRef.current) return;
+        const el = textareaRef.current;
+        const currentHeight = el.style.height;
+        el.style.transition = 'none';
+        el.style.height = "0px";
+        const scrollHeight = el.scrollHeight;
+        el.style.height = currentHeight;
+        void el.offsetHeight;
+        el.style.transition = '';
+        
+        const newHeight = Math.max(68, Math.min(scrollHeight, 160));
+        el.style.height = `${newHeight}px`;
+        setTextareaHeight(newHeight);
+        setIsScrolling(scrollHeight > 160);
+        setTimeout(updateFades, 0);
+      }, [value, expanded]);
+
+      useEffect(() => {
+        setContainerHeight(Math.max(116, textareaHeight + 48));
+        setTimeout(updateFades, 0);
+      }, [textareaHeight]);
+
+      useEffect(() => {
+        if (!isModelSelectOpen) return;
+        const handleOutsideClick = (e) => {
+          if (internalContainerRef.current && !internalContainerRef.current.contains(e.target)) {
+            setIsModelSelectOpen(false);
+          }
+        };
+        document.addEventListener("mousedown", handleOutsideClick);
+        return () => document.removeEventListener("mousedown", handleOutsideClick);
+      }, [isModelSelectOpen]);
+
+      const handleBlur = (e) => {
+        if (internalContainerRef.current && internalContainerRef.current.contains(e.relatedTarget)) return;
+        if (value.trim() === "" && !isRecording) {
+          setIsSmoothResize(false);
+          setExpanded(false);
+          setIsModelSelectOpen(false);
+        }
+      };
 
       const handleSubmit = () => {
-        if (!hasValue) return;
-        onSubmit(value, { model: selectedModel, effort: efforts[effortIndex] });
-        setValue("");
+        if (value.trim() === "") return;
+        setIsSmoothResize(false);
+        onSubmit?.(value, { model: selectedModel, effort: efforts[effortIndex] });
+        handleValueChange("");
         setExpanded(false);
+        setIsModelSelectOpen(false);
       };
 
       const cycleEffort = (e) => {
@@ -145,256 +281,177 @@
 
       return (
         <div
-          ref={containerRef}
-          className="relative flex flex-col w-full mx-auto"
+          ref={internalContainerRef}
+          onBlur={handleBlur}
+          className={cn("relative flex flex-col w-full", className)}
           style={{
-            maxWidth: expanded ? 560 : 380,
-            transition: "max-width 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+            maxWidth: expanded ? 480 : 320,
+            transition: isSmoothResize ? "max-width 0.15s ease-out" : "max-width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
           }}
         >
-          {/* Main Input Card - Strict Monochromatic Black/White */}
           <div
             onMouseDown={(e) => {
-              if (expanded && e.target !== textareaRef.current) {
+              const isTextarea = e.target === textareaRef.current;
+              if (expanded && !isTextarea && !isRecording) {
                 e.preventDefault();
                 textareaRef.current?.focus();
               }
             }}
             style={{
-              borderRadius: 16,
-              height: expanded ? 120 : 48,
-              transition: "height 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+              borderRadius: 24,
+              height: expanded ? containerHeight : 48,
+              transition: isSmoothResize ? SMOOTH_HEIGHT_TRANSITION : SPRING_TRANSITION,
+              overflow: expanded ? "visible" : "hidden",
             }}
             className={cn(
-              "relative w-full border border-[#333333] bg-[#0a0a0a] shadow-none hover:border-[#666666] focus-within:border-white transition-colors",
+              "relative w-full border border-[#222222] bg-[#000000] focus-within:border-[#444444] hover:border-[#333333] z-10",
               expanded ? "cursor-text" : "cursor-default"
             )}
           >
             <textarea
               ref={textareaRef}
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={(e) => handleValueChange(e.target.value)}
+              onScroll={updateFades}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleSubmit();
                 }
-                if (e.key === "Escape") {
+                if (e.key === "Escape" && value.trim() === "") {
+                  setIsSmoothResize(false);
                   setExpanded(false);
+                  setIsModelSelectOpen(false);
                 }
               }}
               placeholder={placeholder}
+              aria-label="Prompt"
+              disabled={isRecording}
+              style={{
+                transition: isSmoothResize
+                  ? "height 0.15s ease-out"
+                  : "opacity 0.3s ease-out, transform 0.3s ease-out, height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+              }}
               className={cn(
-                "absolute top-0 inset-x-0 w-full resize-none bg-transparent pl-4 pr-12 py-3 text-xs leading-[20px] text-white outline-none placeholder:text-[#555555]",
-                expanded ? "opacity-100" : "opacity-0 pointer-events-none"
+                "prompt-scrollbar absolute top-0 inset-x-0 z-[1] w-full resize-none bg-transparent pl-4 pr-12 py-3.5 text-sm leading-[22px] text-white outline-none placeholder:text-[#555555] cursor-text",
+                expanded ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-1 pointer-events-none",
+                isScrolling ? "overflow-y-auto" : "overflow-y-hidden"
               )}
             />
-
+            <div
+              ref={topFadeRef}
+              className="absolute left-4 right-12 top-0 z-[2] h-8 bg-gradient-to-b from-black via-black/90 to-transparent pointer-events-none"
+            />
+            <div
+              ref={bottomFadeRef}
+              className="absolute left-4 right-12 z-[2] h-8 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none"
+              style={{ 
+                opacity: 0, 
+                top: `${textareaHeight - 32}px`,
+                transition: isSmoothResize ? "top 0.15s ease-out" : "top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+              }}
+            />
             <button
               type="button"
               onClick={expand}
+              style={{ transition: isSmoothResize ? "none" : "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}
               className={cn(
-                "absolute inset-x-0 top-0 pl-4 pr-12 py-3 text-left text-xs text-[#777777] outline-none",
-                !expanded ? "opacity-100" : "opacity-0 pointer-events-none"
+                "absolute inset-x-0 top-0 z-[1] cursor-text pl-4 pr-12 py-[15px] text-left text-sm font-medium leading-[17px] text-[#666666] outline-none",
+                !expanded ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-105 translate-y-1 pointer-events-none"
               )}
             >
               {placeholder}
             </button>
 
-            {/* Bottom Actions Bar */}
+            {/* Bottom Actions Wrapper */}
             <div
               className={cn(
-                "absolute bottom-2 left-3 right-12 flex items-center gap-1.5 transition-opacity duration-200",
-                expanded && !isRecording ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                "absolute bottom-2 left-3 right-12 z-[10] flex items-center gap-0 transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]",
+                expanded && !isRecording ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-2 pointer-events-none"
               )}
             >
-              {/* Model Pill */}
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setIsModelSelectOpen(!isModelSelectOpen)}
-                  className="flex items-center gap-1 border border-[#333333] hover:border-white bg-black px-2 py-0.5 rounded text-[10px] text-[#aaaaaa] hover:text-white transition"
+                  onMouseDown={(e) => e.preventDefault()} 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsModelSelectOpen((prev) => !prev);
+                  }}
+                  className={cn(
+                    "group flex items-center gap-1 rounded-full px-2 py-1 text-white/50 transition-all duration-200 outline-none hover:bg-[#111111] hover:text-white cursor-default",
+                    isModelSelectOpen ? "bg-[#111111] text-white" : ""
+                  )}
                 >
-                  <span className="font-mono">{selectedModel}</span>
+                  <ModelIcon model={selectedModel} className="size-3.5 opacity-70 group-hover:opacity-100" />
+                  <span className="text-xs font-semibold select-none">
+                    <MorphingText text={selectedModel} />
+                  </span>
                 </button>
-
-                {isModelSelectOpen && (
-                  <div className="absolute bottom-full left-0 mb-1.5 z-50 w-48 border border-[#333333] bg-black p-1 shadow-2xl flex flex-col gap-1">
-                    {models.map((m) => (
+                <div
+                  className={cn(
+                    "absolute bottom-full left-0 mb-2.5 z-50 w-44 rounded-2xl border border-[#222222] bg-[#000000] p-1 shadow-2xl flex flex-col gap-0.5 transition-all duration-400 cursor-default",
+                    isModelSelectOpen
+                      ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
+                      : "opacity-0 scale-95 translate-y-3 pointer-events-none"
+                  )}
+                >
+                  <div className="relative flex flex-col gap-0.5">
+                    {models.map((model) => (
                       <button
-                        key={m}
+                        key={model}
                         type="button"
-                        onClick={() => {
-                          setSelectedModel(m);
-                          setIsModelSelectOpen(false);
-                        }}
-                        className="text-left text-[10px] px-2 py-1 text-[#888888] hover:text-black hover:bg-white transition"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={(e) => { e.stopPropagation(); setSelectedModel(model); setIsModelSelectOpen(false); }}
+                        className="group relative flex h-8 w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-xs font-medium text-white/80 hover:bg-[#111111] hover:text-white outline-none cursor-default"
                       >
-                        {m}
+                        <span className="flex items-center gap-2">
+                          <ModelIcon model={model} className="size-3.5 opacity-85 group-hover:opacity-100" />
+                          {model}
+                        </span>
                       </button>
                     ))}
                   </div>
-                )}
+                </div>
               </div>
-
-              {/* Effort Button */}
               <button
-                type="button"
-                onClick={cycleEffort}
-                className="flex items-center gap-1 border border-[#333333] hover:border-white bg-black px-2 py-0.5 rounded text-[10px] text-[#aaaaaa] hover:text-white transition"
+                type="button" onMouseDown={(e) => e.preventDefault()} onClick={cycleEffort}
+                className="group flex items-center gap-1 rounded-full px-2 py-1 text-white/50 transition-all duration-200 hover:bg-[#111111] hover:text-white outline-none cursor-default"
               >
                 <DynamicBarsIcon level={efforts[effortIndex]} />
-                <span className="font-mono">{efforts[effortIndex]}</span>
+                <span className="text-xs font-semibold select-none"><MorphingText text={efforts[effortIndex]} /></span>
               </button>
             </div>
 
-            {/* Send / Mic Button */}
             <button
               type="button"
+              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} 
               onClick={onActionButtonClick}
-              className="absolute right-2 bottom-2 size-8 flex items-center justify-center bg-white text-black hover:bg-[#cccccc] transition rounded"
+              style={{ borderRadius: 9999 }}
+              className="absolute right-2 bottom-2 z-[10] flex h-8 w-8 items-center justify-center bg-white text-black hover:bg-[#dddddd] transition-all outline-none cursor-default"
             >
-              {hasValue ? <ArrowUpIcon /> : <MicIcon />}
+              <span className="relative flex h-full w-full items-center justify-center">
+                <span className={cn("absolute inset-0 flex items-center justify-center transition-all duration-300", hasValue ? "opacity-100 scale-100" : "opacity-0 scale-50 pointer-events-none")}>
+                  <ArrowUpIcon />
+                </span>
+                <span className={cn("absolute inset-0 flex items-center justify-center transition-all duration-300", !hasValue ? "opacity-100 scale-100" : "opacity-0 scale-50 pointer-events-none")}>
+                  <MicIcon />
+                </span>
+              </span>
             </button>
           </div>
         </div>
       );
     }
 
-    // ----------------------------------------------------------------------
-    // Main Application: MAY by MAYDAY
-    // ----------------------------------------------------------------------
     function App() {
-      const [activeCase, setActiveCase] = useState(null);
-      const [loading, setLoading] = useState(false);
-      const [logHistory, setLogHistory] = useState([]);
-
-      const handleQuery = async (queryText) => {
-        setLoading(true);
-        // Extract case ID if mentioned (e.g. HHG-001 or 001)
-        const match = queryText.match(/HHG-\d{3}/i) || queryText.match(/\b\d{1,2}\b/);
-        let caseId = "HHG-001";
-        if (match) {
-          const raw = match[0].toUpperCase();
-          caseId = raw.startsWith("HHG-") ? raw : `HHG-${raw.padStart(3, '0')}`;
-        }
-
-        try {
-          const res = await fetch(`/api/cases/${caseId}`);
-          if (!res.ok) throw new Error("Case not found");
-          const data = await res.json();
-          setActiveCase(data);
-          setLogHistory((prev) => [
-            { query: queryText, caseId: data.case_id, verdict: data.case.verdict, data },
-            ...prev
-          ]);
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setLoading(false);
-        }
+      const handleSendMessage = (message, meta) => {
+        console.log("Message:", message, "Meta:", meta);
       };
 
       return (
-        <div className="flex flex-col h-full justify-between p-6">
-          
-          {/* Top Bar: MAY & MAYDAY */}
-          <div className="flex items-center justify-between border-b border-[#222222] pb-3">
-            <div className="flex items-center gap-3">
-              <span className="text-xl font-bold tracking-widest text-white">MAY</span>
-              <span className="text-xs border border-[#333333] px-2 py-0.5 text-[#888888] font-bold">TEAM: MAYDAY</span>
-            </div>
-            <div className="text-[10px] text-[#666666] tracking-wider uppercase">
-              TigerGraph Savanna Knowledge Graph // HHGOA 2026
-            </div>
-          </div>
-
-          {/* Center Area: Chat Input & Active Investigation Output */}
-          <div className="flex-1 flex flex-col items-center justify-center max-w-3xl mx-auto w-full py-4">
-            
-            {/* Title / Identity */}
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold tracking-tight text-white mb-1">
-                AGENTIC FRAUD INVESTIGATION
-              </h1>
-              <p className="text-xs text-[#666666]">
-                Autonomous graph traversal, uncertainty quantification, and next-best actions
-              </p>
-            </div>
-
-            {/* The 21st.dev Component */}
-            <div className="w-full flex justify-center mb-6">
-              <PromptInput onSubmit={(val) => handleQuery(val)} />
-            </div>
-
-            {/* Quick Action Case Triggers */}
-            <div className="flex flex-wrap gap-2 justify-center max-w-lg mb-6">
-              {[
-                { label: "HHG-001 (Travel False Alarm)", id: "HHG-001" },
-                { label: "HHG-014 (Proxy Syndicate Ring)", id: "HHG-014" },
-                { label: "HHG-006 (CNP New Device)", id: "HHG-006" },
-                { label: "HHG-003 (Card Testing Burst)", id: "HHG-003" }
-              ].map((btn) => (
-                <button
-                  key={btn.id}
-                  onClick={() => handleQuery(`Investigate ${btn.id}`)}
-                  className="text-[10px] border border-[#222222] hover:border-white bg-[#0a0a0a] text-[#888888] hover:text-white px-2.5 py-1 transition"
-                >
-                  [ {btn.label} ]
-                </button>
-              ))}
-            </div>
-
-            {/* Active Output Dossier */}
-            {activeCase && (
-              <div className="w-full border border-[#222222] bg-[#050505] p-4 text-xs font-mono max-h-72 overflow-y-auto">
-                <div className="flex items-center justify-between border-b border-[#222222] pb-2 mb-3">
-                  <div>
-                    <span className="font-bold text-white text-sm">{activeCase.case_id}</span>
-                    <span className="text-[#666666] ml-2">PATTERN: {activeCase.case.pattern.toUpperCase()}</span>
-                  </div>
-                  <div className="border border-white px-2 py-0.5 text-white font-bold">
-                    VERDICT: {activeCase.case.verdict.toUpperCase()} (${activeCase.case.exposure_usd.toFixed(2)})
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-3">
-                  <div className="border border-[#1a1a1a] p-2">
-                    <span className="text-[10px] text-[#666666] block mb-1">STAGE 1: INITIAL NBA (PRE-EVIDENCE)</span>
-                    <div className="text-white font-semibold">
-                      {activeCase.next_best_actions.initial.map((a) => `${a.action} [${a.route}]`).join(", ")}
-                    </div>
-                  </div>
-                  <div className="border border-[#1a1a1a] p-2">
-                    <span className="text-[10px] text-[#666666] block mb-1">STAGE 2: FINAL NBA (POST-EVIDENCE)</span>
-                    <div className="text-white font-semibold">
-                      {activeCase.next_best_actions.final.map((a) => `${a.action} [${a.route}]`).join(", ")}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-[#888888] text-[11px] leading-relaxed mb-2">
-                  <span className="text-white font-bold">WHAT CHANGED: </span>
-                  {activeCase.next_best_actions.what_changed}
-                </div>
-
-                {activeCase.sar.file && (
-                  <div className="border-t border-[#222222] pt-2 mt-2 text-[10px] text-[#aaaaaa]">
-                    <span className="text-white font-bold">[REGULATORY SAR FILED]: </span>
-                    {activeCase.sar.narrative}
-                  </div>
-                )}
-              </div>
-            )}
-
-          </div>
-
-          {/* Footer */}
-          <div className="border-t border-[#222222] pt-2 flex items-center justify-between text-[10px] text-[#555555]">
-            <span>TEAM MAYDAY // HHGOA 2026</span>
-            <span>POWERED BY TIGERGRAPH GSQL & MCP</span>
-          </div>
-
+        <div className="flex h-screen w-screen items-center justify-center bg-black">
+          <PromptInput onSubmit={handleSendMessage} placeholder="Ask anything" />
         </div>
       );
     }
