@@ -3,657 +3,403 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TIGERGRAPH // AGENTIC FRAUD INVESTIGATION CONSOLE</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+  <title>MAY // MAYDAY — TigerGraph Fraud Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap');
-
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+    
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      font-family: 'JetBrains Mono', monospace;
     }
 
     body {
       background-color: #000000;
       color: #ffffff;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      line-height: 1.4;
       height: 100vh;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Scrollbars */
+    /* Custom scrollbars */
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: #000000; }
     ::-webkit-scrollbar-thumb { background: #333333; }
-    ::-webkit-scrollbar-thumb:hover { background: #666666; }
-
-    /* Top Status Bar */
-    header {
-      background: #000000;
-      border-bottom: 1px solid #222222;
-      padding: 8px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 40px;
-      flex-shrink: 0;
-    }
-
-    .brand {
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .status-tags {
-      display: flex;
-      gap: 16px;
-      color: #888888;
-    }
-
-    .status-tag span {
-      color: #ffffff;
-    }
-
-    /* Main Container */
-    main {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 240px 1fr 380px;
-      overflow: hidden;
-    }
-
-    /* Common Column Style */
-    .panel {
-      border-right: 1px solid #222222;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    .panel:last-child {
-      border-right: none;
-    }
-
-    .panel-header {
-      background: #000000;
-      border-bottom: 1px solid #222222;
-      padding: 8px 12px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: #777777;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 32px;
-      flex-shrink: 0;
-    }
-
-    .panel-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-    }
-
-    /* Left: Case Queue Table */
-    .case-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 6px 8px;
-      cursor: pointer;
-      border-bottom: 1px solid #111111;
-      color: #999999;
-      transition: background 0.1s;
-    }
-
-    .case-row:hover {
-      background: #111111;
-      color: #ffffff;
-    }
-
-    .case-row.active {
-      background: #ffffff;
-      color: #000000;
-      font-weight: 700;
-    }
-
-    .case-row .id { font-weight: 700; }
-    .case-row .badge { font-size: 9px; padding: 1px 4px; border: 1px solid currentColor; }
-
-    /* Center: Agent Thought & Subgraph */
-    .center-panel {
-      display: grid;
-      grid-template-rows: 280px 1fr;
-      overflow: hidden;
-    }
-
-    #cy {
-      width: 100%;
-      height: 100%;
-      background: #000000;
-      border-bottom: 1px solid #222222;
-    }
-
-    .agent-stream {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-      background: #000000;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .log-line {
-      display: flex;
-      gap: 12px;
-      line-height: 1.5;
-    }
-
-    .log-ts {
-      color: #555555;
-      flex-shrink: 0;
-    }
-
-    .log-tag {
-      color: #000000;
-      background: #ffffff;
-      padding: 0 4px;
-      font-weight: 700;
-      font-size: 9px;
-      height: 16px;
-      display: inline-flex;
-      align-items: center;
-      flex-shrink: 0;
-    }
-
-    .log-tag.tool { background: #333333; color: #ffffff; border: 1px solid #555555; }
-    .log-tag.policy { background: #ffffff; color: #000000; }
-    .log-tag.verdict { background: #ffffff; color: #000000; }
-
-    .log-msg {
-      color: #cccccc;
-      flex: 1;
-    }
-
-    /* Right: Decision Matrix & Dossier */
-    .section-title {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #666666;
-      margin-bottom: 6px;
-      margin-top: 12px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .section-title:first-child { margin-top: 0; }
-
-    .kv-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 12px;
-    }
-
-    .kv-table td {
-      padding: 4px 6px;
-      border: 1px solid #1a1a1a;
-      vertical-align: top;
-    }
-
-    .kv-table td.label {
-      color: #777777;
-      width: 35%;
-      font-size: 10px;
-    }
-
-    .kv-table td.value {
-      color: #ffffff;
-      font-weight: 500;
-    }
-
-    .action-box {
-      border: 1px solid #333333;
-      padding: 8px;
-      margin-bottom: 8px;
-      background: #000000;
-    }
-
-    .action-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 3px 0;
-      border-bottom: 1px dotted #222222;
-    }
-
-    .action-item:last-child { border-bottom: none; }
-
-    .action-name { font-weight: 700; color: #ffffff; }
-    .action-route {
-      border: 1px solid #ffffff;
-      padding: 0 4px;
-      font-size: 9px;
-      color: #ffffff;
-    }
-
-    .btn {
-      background: #000000;
-      border: 1px solid #ffffff;
-      color: #ffffff;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 6px 10px;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      transition: all 0.1s;
-    }
-
-    .btn:hover {
-      background: #ffffff;
-      color: #000000;
-    }
-
-    .btn-group {
-      display: flex;
-      gap: 6px;
-      margin-top: 8px;
-    }
-
-    .sar-block {
-      border: 1px solid #333333;
-      padding: 8px;
-      font-size: 10px;
-      line-height: 1.5;
-      color: #aaaaaa;
-      max-height: 130px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-    }
+    ::-webkit-scrollbar-thumb:hover { background: #555555; }
   </style>
 </head>
-<body>
+<body class="bg-black text-white">
+  <div id="root" class="h-screen w-screen flex flex-col justify-between"></div>
 
-  <!-- Top System Bar -->
-  <header>
-    <div class="brand">
-      <span>TIGERGRAPH // FRAUD AGENT</span>
-      <span style="color:#555555">v2.0-HHGOA</span>
-    </div>
-    <div class="status-tags">
-      <div class="status-tag">GRAPH: <span>FraudGraph (Savanna)</span></div>
-      <div class="status-tag">POLICY: <span>R1-R10 DETERMINISTIC</span></div>
-      <div class="status-tag">EVALUATOR: <span>20/20 VALIDATED</span></div>
-    </div>
-    <div>
-      <button class="btn" onclick="runInvestigation()">[ INVESTIGATE ACTIVE ]</button>
-    </div>
-  </header>
+  <script type="text/babel">
+    const { useState, useRef, useEffect, useCallback } = React;
 
-  <!-- Main Three-Panel View -->
-  <main>
-
-    <!-- Column 1: Case Queue -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>CASE QUEUE</span>
-        <span id="caseCount">20 TARGETS</span>
-      </div>
-      <div class="panel-content" id="caseQueue" style="padding:0;">
-        <!-- Populated via JS -->
-      </div>
-    </div>
-
-    <!-- Column 2: Graph + Agent Execution Stream -->
-    <div class="panel center-panel">
-      <!-- Cytoscape Subgraph -->
-      <div style="position:relative;">
-        <div style="position:absolute; top:8px; left:8px; z-index:10; font-size:9px; color:#555555; pointer-events:none;">
-          TOPOLOGY: [CUSTOMER] -> [CARD] -> [TXN] -> [DEVICE] -> [CONNECTED CARDS / CASES]
-        </div>
-        <div id="cy"></div>
-      </div>
-
-      <!-- Agent Thought & Tool Execution Stream -->
-      <div style="display:flex; flex-direction:column; overflow:hidden;">
-        <div class="panel-header">
-          <span>AUTONOMOUS AGENT REASONING STREAM & TOOL TELEMETRY</span>
-          <span id="toolCount">0 MCP CALLS</span>
-        </div>
-        <div class="agent-stream" id="agentStream">
-          <!-- Populated via JS -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Column 3: Case Dossier & Policy Engine -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>INVESTIGATION DOSSIER</span>
-        <span id="headerVerdict">UNKNOWN</span>
-      </div>
-      <div class="panel-content">
-        
-        <div class="section-title">CASE PARAMETERS</div>
-        <table class="kv-table">
-          <tr>
-            <td class="label">CASE ID</td>
-            <td class="value" id="valCaseId">-</td>
-          </tr>
-          <tr>
-            <td class="label">TRIGGER</td>
-            <td class="value" id="valTrigger">-</td>
-          </tr>
-          <tr>
-            <td class="label">CUSTOMER</td>
-            <td class="value" id="valCustomer">-</td>
-          </tr>
-          <tr>
-            <td class="label">CARD ID</td>
-            <td class="value" id="valCard">-</td>
-          </tr>
-          <tr>
-            <td class="label">PATTERN</td>
-            <td class="value" id="valPattern">-</td>
-          </tr>
-          <tr>
-            <td class="label">EXPOSURE</td>
-            <td class="value" id="valExposure">-</td>
-          </tr>
-          <tr>
-            <td class="label">PROBABILITY</td>
-            <td class="value" id="valProbability">-</td>
-          </tr>
-        </table>
-
-        <!-- Two Stage Policy NBA -->
-        <div class="section-title">
-          <span>NEXT BEST ACTION (PRE-EVIDENCE)</span>
-          <span style="color:#555555">STAGE 1</span>
-        </div>
-        <div class="action-box" id="boxInitialNba">
-          <!-- Populated via JS -->
-        </div>
-
-        <div class="section-title">
-          <span>EVIDENCE INQUIRY (CONTROLLED)</span>
-          <span style="color:#555555">POLICY R1</span>
-        </div>
-        <div class="action-box" id="boxEvidenceReq">
-          <!-- Populated via JS -->
-        </div>
-
-        <div class="section-title">
-          <span>NEXT BEST ACTION (POST-EVIDENCE)</span>
-          <span style="color:#555555">STAGE 2</span>
-        </div>
-        <div class="action-box" id="boxFinalNba">
-          <!-- Populated via JS -->
-        </div>
-
-        <div class="section-title">POLICY TRANSITION NARRATIVE</div>
-        <div style="border:1px solid #222222; padding:6px; color:#888888; font-size:10px; margin-bottom:12px;" id="valWhatChanged">
-          -
-        </div>
-
-        <!-- Simulator Override -->
-        <div class="section-title">SIMULATE EVIDENCE RESOLUTION</div>
-        <div class="btn-group">
-          <button class="btn" style="flex:1;" onclick="simulateResponse('Customer confirms they made this transaction.')">[ CONFIRM ]</button>
-          <button class="btn" style="flex:1;" onclick="simulateResponse('Customer denies making or authorizing this transaction.')">[ DENY ]</button>
-        </div>
-
-        <!-- SAR Section -->
-        <div class="section-title" style="margin-top:16px;">
-          <span>FINCEN SAR FILING</span>
-          <span id="sarStatus">[STATUS]</span>
-        </div>
-        <div class="sar-block" id="sarText">
-          -
-        </div>
-
-      </div>
-    </div>
-
-  </main>
-
-  <script>
-    let currentCaseId = 'HHG-001';
-    let allCases = [];
-    let cy = null;
-
-    async function init() {
-      const res = await fetch('/api/cases');
-      allCases = await res.json();
-      renderCaseQueue();
-      selectCase(currentCaseId);
+    // Helper cn
+    function cn(...classes) {
+      return classes.filter(Boolean).join(" ");
     }
 
-    function renderCaseQueue() {
-      const container = document.getElementById('caseQueue');
-      container.innerHTML = '';
-      allCases.forEach(c => {
-        const row = document.createElement('div');
-        row.className = `case-row ${c.case_id === currentCaseId ? 'active' : ''}`;
-        row.onclick = () => selectCase(c.case_id);
-        row.innerHTML = `
-          <div>
-            <span class="id">${c.case_id}</span>
-            <span style="margin-left:4px; font-size:10px; opacity:0.7;">${c.trigger_type.slice(0,4)}</span>
-          </div>
-          <div style="display:flex; gap:6px; align-items:center;">
-            <span>$${c.exposure_usd.toFixed(0)}</span>
-            <span class="badge">${c.verdict.toUpperCase().slice(0,3)}</span>
-          </div>
-        `;
-        container.appendChild(row);
-      });
-      document.getElementById('caseCount').innerText = `${allCases.length} TARGETS`;
+    // ----------------------------------------------------------------------
+    // Sub-components & Icons
+    // ----------------------------------------------------------------------
+    function MorphingText({ text }) {
+      return <span>{text}</span>;
     }
 
-    async function selectCase(caseId) {
-      currentCaseId = caseId;
-      renderCaseQueue();
-
-      const [caseRes, graphRes] = await Promise.all([
-        fetch(`/api/cases/${caseId}`),
-        fetch(`/api/graph/${caseId}`)
-      ]);
-
-      const caseData = await caseRes.json();
-      const graphData = await graphRes.json();
-
-      renderDossier(caseData);
-      renderStream(caseData);
-      renderGraph(graphData);
+    function ArrowUpIcon() {
+      return (
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M7 12V2M7 2L2.5 6.5M7 2L11.5 6.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
     }
 
-    function renderDossier(data) {
-      const c = data.case;
-      const nba = data.next_best_actions;
-
-      document.getElementById('headerVerdict').innerText = c.verdict.toUpperCase();
-      document.getElementById('valCaseId').innerText = data.case_id;
-      document.getElementById('valTrigger').innerText = data.case_id.includes('001') ? 'risk_score' : 'alert';
-      document.getElementById('valCustomer').innerText = data.sar.subjects[0] || 'C-USER';
-      document.getElementById('valCard').innerText = data.sar.subjects[1] || 'K-CARD';
-      document.getElementById('valPattern').innerText = c.pattern;
-      document.getElementById('valExposure').innerText = `$${c.exposure_usd.toFixed(2)}`;
-      document.getElementById('valProbability').innerText = `${(c.fraud_probability * 100).toFixed(0)}%`;
-
-      // Initial NBA
-      const initBox = document.getElementById('boxInitialNba');
-      initBox.innerHTML = '';
-      nba.initial.forEach(a => {
-        initBox.innerHTML += `
-          <div class="action-item">
-            <span class="action-name">${a.action}</span>
-            <span class="action-route">${a.route}</span>
-          </div>
-        `;
-      });
-
-      // Evidence Req
-      const evBox = document.getElementById('boxEvidenceReq');
-      const evReq = data.evidence_requests && data.evidence_requests[0];
-      evBox.innerHTML = evReq ? `<div style="color:#aaaaaa;">${evReq.assumed_response}</div>` : '<div style="color:#555555;">NONE REQUESTED</div>';
-
-      // Final NBA
-      const finalBox = document.getElementById('boxFinalNba');
-      finalBox.innerHTML = '';
-      nba.final.forEach(a => {
-        finalBox.innerHTML += `
-          <div class="action-item">
-            <span class="action-name">${a.action}</span>
-            <span class="action-route">${a.route}</span>
-          </div>
-        `;
-      });
-
-      document.getElementById('valWhatChanged').innerText = nba.what_changed;
-
-      // SAR
-      const sarStatus = document.getElementById('sarStatus');
-      const sarText = document.getElementById('sarText');
-      if (data.sar.file) {
-        sarStatus.innerText = '[FILED]';
-        sarStatus.style.color = '#ffffff';
-        sarText.innerText = `REASON: ${data.sar.reason}\n\nSUBJECTS: ${data.sar.subjects.join(', ')}\nTOTAL EXPOSURE: $${data.sar.total_amount_usd.toFixed(2)}\n\nNARRATIVE:\n${data.sar.narrative}`;
-      } else {
-        sarStatus.innerText = '[NOT REQUIRED]';
-        sarStatus.style.color = '#666666';
-        sarText.innerText = data.sar.reason || 'Case exposure and single-account scope do not trip regulatory filing thresholds under Policy Section 3a.';
-      }
+    function MicIcon() {
+      return (
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <rect x="5" y="1" width="4" height="7" rx="2" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M2.75 6.5V7a4.25 4.25 0 0 0 8.5 0v-.5M7 11.25V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      );
     }
 
-    function renderStream(data) {
-      const stream = document.getElementById('agentStream');
-      stream.innerHTML = '';
-
-      function addLog(tag, type, msg) {
-        const d = document.createElement('div');
-        d.className = 'log-line';
-        d.innerHTML = `
-          <div class="log-ts">${new Date().toISOString().slice(11, 19)}</div>
-          <div class="log-tag ${type}">${tag}</div>
-          <div class="log-msg">${msg}</div>
-        `;
-        stream.appendChild(d);
-      }
-
-      addLog('TRIGGER', 'policy', `Received trigger event for case ${data.case_id}. Initiating graph traversal.`);
-      addLog('TG_MCP', 'tool', `CALL tg_get_card_history(card_id) -> Traversed card transaction baseline.`);
-      
-      data.case.evidence.forEach(ev => {
-        addLog(ev.source.toUpperCase(), 'tool', `[${ev.ref}] ${ev.claim}`);
-      });
-
-      addLog('STAGE_1', 'policy', `Initial Next Best Action evaluated: ${data.next_best_actions.initial.map(a => a.action).join(', ')}.`);
-      
-      if (data.evidence_requests && data.evidence_requests.length > 0) {
-        addLog('EVIDENCE', 'policy', `Inquiry sent: ${data.evidence_requests[0].assumed_response}`);
-      }
-
-      addLog('STAGE_2', 'verdict', `Final Next Best Action settled: ${data.next_best_actions.final.map(a => a.action).join(', ')}. Verdict: ${data.case.verdict.toUpperCase()}.`);
-      addLog('MEMORY', 'tool', `CALL tg_write_case_to_graph -> Case vertex persisted as ${data.case.graph_case_id}.`);
-
-      document.getElementById('toolCount').innerText = `${data.tool_calls} MCP TOOLS EXECUTED`;
-      stream.scrollTop = stream.scrollHeight;
+    function StopIcon() {
+      return (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" fill="currentColor" />
+        </svg>
+      );
     }
 
-    function renderGraph(graphData) {
-      const elements = [];
+    function PlusIcon() {
+      return (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M7 2.5V11.5M2.5 7H11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      );
+    }
 
-      graphData.nodes.forEach(n => {
-        elements.push({
-          data: { id: n.id, label: n.label }
-        });
-      });
+    function DynamicBarsIcon({ level }) {
+      const isMediumOrHigh = level === "Medium" || level === "Max Effort";
+      const isHigh = level === "Max Effort";
+      return (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <rect x="1.5" y="8" width="2.5" height="4.5" rx="1" fill="currentColor" opacity={1} />
+          <rect x="5.75" y="5" width="2.5" height="7.5" rx="1" fill="currentColor" opacity={isMediumOrHigh ? 1 : 0.3} />
+          <rect x="10" y="2" width="2.5" height="10.5" rx="1" fill="currentColor" opacity={isHigh ? 1 : 0.3} />
+        </svg>
+      );
+    }
 
-      graphData.edges.forEach(e => {
-        elements.push({
-          data: { source: e.source, target: e.target, label: e.label }
-        });
-      });
+    // ----------------------------------------------------------------------
+    // The Centered AI Chat Input Component (21st.dev @jahed/ai-chat-input)
+    // Monochromatic Anti-Slop Adaptation
+    // ----------------------------------------------------------------------
+    function PromptInput({ onSubmit, placeholder = "Investigate case, e.g. HHG-001 or ask MAY..." }) {
+      const [expanded, setExpanded] = useState(false);
+      const [value, setValue] = useState("");
+      const [selectedModel, setSelectedModel] = useState("TigerGraph GSQL");
+      const [effortIndex, setEffortIndex] = useState(1);
+      const [isModelSelectOpen, setIsModelSelectOpen] = useState(false);
+      const [isRecording, setIsRecording] = useState(false);
+      const [audioData, setAudioData] = useState(new Array(5).fill(0));
 
-      if (cy) cy.destroy();
+      const models = ["TigerGraph GSQL", "GraphRAG Reasoner", "FinCEN Policy Engine", "Louvain Community"];
+      const efforts = ["Fast Triage", "Deep Graph Walk", "Max Corroboration"];
 
-      cy = cytoscape({
-        container: document.getElementById('cy'),
-        elements: elements,
-        style: [
-          {
-            selector: 'node',
-            style: {
-              'background-color': '#000000',
-              'border-width': 1,
-              'border-color': '#ffffff',
-              'label': 'data(label)',
-              'color': '#ffffff',
-              'font-size': '9px',
-              'font-family': 'JetBrains Mono',
-              'text-valign': 'center',
-              'text-halign': 'center',
-              'text-wrap': 'wrap',
-              'width': '65px',
-              'height': '65px',
-              'shape': 'rectangle'
-            }
-          },
-          {
-            selector: 'edge',
-            style: {
-              'width': 1,
-              'line-color': '#444444',
-              'target-arrow-color': '#ffffff',
-              'target-arrow-shape': 'triangle',
-              'curve-style': 'bezier',
-              'label': 'data(label)',
-              'font-size': '8px',
-              'color': '#666666',
-              'text-background-opacity': 1,
-              'text-background-color': '#000000',
-              'text-background-padding': 2
-            }
-          }
-        ],
-        layout: {
-          name: 'cose',
-          animate: false,
-          padding: 25
+      const textareaRef = useRef(null);
+      const containerRef = useRef(null);
+
+      const hasValue = value.trim() !== "";
+
+      const expand = () => setExpanded(true);
+
+      const handleSubmit = () => {
+        if (!hasValue) return;
+        onSubmit(value, { model: selectedModel, effort: efforts[effortIndex] });
+        setValue("");
+        setExpanded(false);
+      };
+
+      const cycleEffort = (e) => {
+        e.stopPropagation();
+        setEffortIndex((prev) => (prev + 1) % efforts.length);
+      };
+
+      const onActionButtonClick = (e) => {
+        e.preventDefault();
+        if (isRecording) {
+          setIsRecording(false);
+        } else if (hasValue) {
+          handleSubmit();
+        } else {
+          setIsRecording(true);
+          setTimeout(() => setIsRecording(false), 2500);
         }
-      });
+      };
+
+      return (
+        <div
+          ref={containerRef}
+          className="relative flex flex-col w-full mx-auto"
+          style={{
+            maxWidth: expanded ? 560 : 380,
+            transition: "max-width 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+          }}
+        >
+          {/* Main Input Card - Strict Monochromatic Black/White */}
+          <div
+            onMouseDown={(e) => {
+              if (expanded && e.target !== textareaRef.current) {
+                e.preventDefault();
+                textareaRef.current?.focus();
+              }
+            }}
+            style={{
+              borderRadius: 16,
+              height: expanded ? 120 : 48,
+              transition: "height 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+            }}
+            className={cn(
+              "relative w-full border border-[#333333] bg-[#0a0a0a] shadow-none hover:border-[#666666] focus-within:border-white transition-colors",
+              expanded ? "cursor-text" : "cursor-default"
+            )}
+          >
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+                if (e.key === "Escape") {
+                  setExpanded(false);
+                }
+              }}
+              placeholder={placeholder}
+              className={cn(
+                "absolute top-0 inset-x-0 w-full resize-none bg-transparent pl-4 pr-12 py-3 text-xs leading-[20px] text-white outline-none placeholder:text-[#555555]",
+                expanded ? "opacity-100" : "opacity-0 pointer-events-none"
+              )}
+            />
+
+            <button
+              type="button"
+              onClick={expand}
+              className={cn(
+                "absolute inset-x-0 top-0 pl-4 pr-12 py-3 text-left text-xs text-[#777777] outline-none",
+                !expanded ? "opacity-100" : "opacity-0 pointer-events-none"
+              )}
+            >
+              {placeholder}
+            </button>
+
+            {/* Bottom Actions Bar */}
+            <div
+              className={cn(
+                "absolute bottom-2 left-3 right-12 flex items-center gap-1.5 transition-opacity duration-200",
+                expanded && !isRecording ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+              )}
+            >
+              {/* Model Pill */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsModelSelectOpen(!isModelSelectOpen)}
+                  className="flex items-center gap-1 border border-[#333333] hover:border-white bg-black px-2 py-0.5 rounded text-[10px] text-[#aaaaaa] hover:text-white transition"
+                >
+                  <span className="font-mono">{selectedModel}</span>
+                </button>
+
+                {isModelSelectOpen && (
+                  <div className="absolute bottom-full left-0 mb-1.5 z-50 w-48 border border-[#333333] bg-black p-1 shadow-2xl flex flex-col gap-1">
+                    {models.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          setSelectedModel(m);
+                          setIsModelSelectOpen(false);
+                        }}
+                        className="text-left text-[10px] px-2 py-1 text-[#888888] hover:text-black hover:bg-white transition"
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Effort Button */}
+              <button
+                type="button"
+                onClick={cycleEffort}
+                className="flex items-center gap-1 border border-[#333333] hover:border-white bg-black px-2 py-0.5 rounded text-[10px] text-[#aaaaaa] hover:text-white transition"
+              >
+                <DynamicBarsIcon level={efforts[effortIndex]} />
+                <span className="font-mono">{efforts[effortIndex]}</span>
+              </button>
+            </div>
+
+            {/* Send / Mic Button */}
+            <button
+              type="button"
+              onClick={onActionButtonClick}
+              className="absolute right-2 bottom-2 size-8 flex items-center justify-center bg-white text-black hover:bg-[#cccccc] transition rounded"
+            >
+              {hasValue ? <ArrowUpIcon /> : <MicIcon />}
+            </button>
+          </div>
+        </div>
+      );
     }
 
-    async function simulateResponse(respText) {
-      await fetch(`/api/simulate/${currentCaseId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assumed_response: respText })
-      });
-      await selectCase(currentCaseId);
+    // ----------------------------------------------------------------------
+    // Main Application: MAY by MAYDAY
+    // ----------------------------------------------------------------------
+    function App() {
+      const [activeCase, setActiveCase] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [logHistory, setLogHistory] = useState([]);
+
+      const handleQuery = async (queryText) => {
+        setLoading(true);
+        // Extract case ID if mentioned (e.g. HHG-001 or 001)
+        const match = queryText.match(/HHG-\d{3}/i) || queryText.match(/\b\d{1,2}\b/);
+        let caseId = "HHG-001";
+        if (match) {
+          const raw = match[0].toUpperCase();
+          caseId = raw.startsWith("HHG-") ? raw : `HHG-${raw.padStart(3, '0')}`;
+        }
+
+        try {
+          const res = await fetch(`/api/cases/${caseId}`);
+          if (!res.ok) throw new Error("Case not found");
+          const data = await res.json();
+          setActiveCase(data);
+          setLogHistory((prev) => [
+            { query: queryText, caseId: data.case_id, verdict: data.case.verdict, data },
+            ...prev
+          ]);
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="flex flex-col h-full justify-between p-6">
+          
+          {/* Top Bar: MAY & MAYDAY */}
+          <div className="flex items-center justify-between border-b border-[#222222] pb-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xl font-bold tracking-widest text-white">MAY</span>
+              <span className="text-xs border border-[#333333] px-2 py-0.5 text-[#888888] font-bold">TEAM: MAYDAY</span>
+            </div>
+            <div className="text-[10px] text-[#666666] tracking-wider uppercase">
+              TigerGraph Savanna Knowledge Graph // HHGOA 2026
+            </div>
+          </div>
+
+          {/* Center Area: Chat Input & Active Investigation Output */}
+          <div className="flex-1 flex flex-col items-center justify-center max-w-3xl mx-auto w-full py-4">
+            
+            {/* Title / Identity */}
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-bold tracking-tight text-white mb-1">
+                AGENTIC FRAUD INVESTIGATION
+              </h1>
+              <p className="text-xs text-[#666666]">
+                Autonomous graph traversal, uncertainty quantification, and next-best actions
+              </p>
+            </div>
+
+            {/* The 21st.dev Component */}
+            <div className="w-full flex justify-center mb-6">
+              <PromptInput onSubmit={(val) => handleQuery(val)} />
+            </div>
+
+            {/* Quick Action Case Triggers */}
+            <div className="flex flex-wrap gap-2 justify-center max-w-lg mb-6">
+              {[
+                { label: "HHG-001 (Travel False Alarm)", id: "HHG-001" },
+                { label: "HHG-014 (Proxy Syndicate Ring)", id: "HHG-014" },
+                { label: "HHG-006 (CNP New Device)", id: "HHG-006" },
+                { label: "HHG-003 (Card Testing Burst)", id: "HHG-003" }
+              ].map((btn) => (
+                <button
+                  key={btn.id}
+                  onClick={() => handleQuery(`Investigate ${btn.id}`)}
+                  className="text-[10px] border border-[#222222] hover:border-white bg-[#0a0a0a] text-[#888888] hover:text-white px-2.5 py-1 transition"
+                >
+                  [ {btn.label} ]
+                </button>
+              ))}
+            </div>
+
+            {/* Active Output Dossier */}
+            {activeCase && (
+              <div className="w-full border border-[#222222] bg-[#050505] p-4 text-xs font-mono max-h-72 overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-[#222222] pb-2 mb-3">
+                  <div>
+                    <span className="font-bold text-white text-sm">{activeCase.case_id}</span>
+                    <span className="text-[#666666] ml-2">PATTERN: {activeCase.case.pattern.toUpperCase()}</span>
+                  </div>
+                  <div className="border border-white px-2 py-0.5 text-white font-bold">
+                    VERDICT: {activeCase.case.verdict.toUpperCase()} (${activeCase.case.exposure_usd.toFixed(2)})
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  <div className="border border-[#1a1a1a] p-2">
+                    <span className="text-[10px] text-[#666666] block mb-1">STAGE 1: INITIAL NBA (PRE-EVIDENCE)</span>
+                    <div className="text-white font-semibold">
+                      {activeCase.next_best_actions.initial.map((a) => `${a.action} [${a.route}]`).join(", ")}
+                    </div>
+                  </div>
+                  <div className="border border-[#1a1a1a] p-2">
+                    <span className="text-[10px] text-[#666666] block mb-1">STAGE 2: FINAL NBA (POST-EVIDENCE)</span>
+                    <div className="text-white font-semibold">
+                      {activeCase.next_best_actions.final.map((a) => `${a.action} [${a.route}]`).join(", ")}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[#888888] text-[11px] leading-relaxed mb-2">
+                  <span className="text-white font-bold">WHAT CHANGED: </span>
+                  {activeCase.next_best_actions.what_changed}
+                </div>
+
+                {activeCase.sar.file && (
+                  <div className="border-t border-[#222222] pt-2 mt-2 text-[10px] text-[#aaaaaa]">
+                    <span className="text-white font-bold">[REGULATORY SAR FILED]: </span>
+                    {activeCase.sar.narrative}
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
+
+          {/* Footer */}
+          <div className="border-t border-[#222222] pt-2 flex items-center justify-between text-[10px] text-[#555555]">
+            <span>TEAM MAYDAY // HHGOA 2026</span>
+            <span>POWERED BY TIGERGRAPH GSQL & MCP</span>
+          </div>
+
+        </div>
+      );
     }
 
-    async function runInvestigation() {
-      await selectCase(currentCaseId);
-    }
-
-    init();
+    ReactDOM.render(<App />, document.getElementById("root"));
   </script>
 </body>
 </html>
