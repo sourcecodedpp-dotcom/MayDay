@@ -48,13 +48,10 @@
   </style>
 </head>
 <body class="bg-black text-white">
-  <div id="root" class="h-screen w-screen flex items-center justify-center"></div>
+  <div id="root" class="h-screen w-screen flex items-center justify-center p-4"></div>
 
   <script type="text/babel">
     const { useState, useRef, useEffect, useCallback } = React;
-
-    const SPRING_TRANSITION = "max-width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-    const SMOOTH_HEIGHT_TRANSITION = "max-width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), height 0.15s ease-out";
 
     function cn(...classes) {
       return classes.filter(Boolean).join(" ");
@@ -120,22 +117,6 @@
       );
     }
 
-    function StopIcon() {
-      return (
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" fill="currentColor" />
-        </svg>
-      );
-    }
-
-    function PlusIcon() {
-      return (
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M7 2.5V11.5M2.5 7H11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-      );
-    }
-
     function DynamicBarsIcon({ level }) {
       const isMediumOrHigh = level === "Medium" || level === "Max Effort";
       const isHigh = level === "Max Effort";
@@ -155,83 +136,28 @@
       models = ["GPT 5.5", "Opus 4.8", "Gemini 3.5 Flash", "Composer 2.5", "GLM 5.2"],
       efforts = ["Low", "Medium", "Max Effort"],
     }) {
-      const [expanded, setExpanded] = useState(false);
-      const [isSmoothResize, setIsSmoothResize] = useState(false);
       const [value, setValue] = useState("");
       const [selectedModel, setSelectedModel] = useState(models[0]);
-      const [effortIndex, setEffortIndex] = useState(1);
+      const [effortIndex, setEffortIndex] = useState(0); // "Low" by default as in screenshot
       const [isModelSelectOpen, setIsModelSelectOpen] = useState(false);
-      const [isRecording, setIsRecording] = useState(false);
-      const [audioData, setAudioData] = useState(new Array(5).fill(0));
       const [containerHeight, setContainerHeight] = useState(116);
       const [textareaHeight, setTextareaHeight] = useState(68);
-      const [isScrolling, setIsScrolling] = useState(false);
 
       const textareaRef = useRef(null);
       const internalContainerRef = useRef(null);
-      const topFadeRef = useRef(null);
-      const bottomFadeRef = useRef(null);
 
       const hasValue = value.trim() !== "";
-
-      const updateFades = () => {
-        const el = textareaRef.current;
-        if (!el) return;
-        const { scrollTop, scrollHeight, clientHeight } = el;
-        if (topFadeRef.current) {
-          topFadeRef.current.style.opacity = Math.min(scrollTop / 20, 1).toString();
-        }
-        if (bottomFadeRef.current) {
-          const bottomScroll = scrollHeight - clientHeight - scrollTop;
-          bottomFadeRef.current.style.opacity = Math.min(Math.max(bottomScroll - 16, 0) / 10, 1).toString();
-        }
-      };
-
-      const handleValueChange = (val) => {
-        setIsSmoothResize(true);
-        setValue(val);
-      };
-
-      const expand = () => {
-        setIsSmoothResize(false);
-        setExpanded(true);
-      };
-
-      useEffect(() => {
-        if (value.trim() !== "" && !expanded) {
-          setIsSmoothResize(false);
-          setExpanded(true);
-        }
-      }, [value, expanded]);
-
-      useEffect(() => {
-        if (expanded && !isRecording && textareaRef.current) {
-          textareaRef.current.focus();
-        }
-      }, [expanded, isRecording]);
 
       useEffect(() => {
         if (!textareaRef.current) return;
         const el = textareaRef.current;
-        const currentHeight = el.style.height;
-        el.style.transition = 'none';
         el.style.height = "0px";
         const scrollHeight = el.scrollHeight;
-        el.style.height = currentHeight;
-        void el.offsetHeight;
-        el.style.transition = '';
-        
-        const newHeight = Math.max(68, Math.min(scrollHeight, 160));
+        const newHeight = Math.max(68, Math.min(scrollHeight, 180));
         el.style.height = `${newHeight}px`;
         setTextareaHeight(newHeight);
-        setIsScrolling(scrollHeight > 160);
-        setTimeout(updateFades, 0);
-      }, [value, expanded]);
-
-      useEffect(() => {
-        setContainerHeight(Math.max(116, textareaHeight + 48));
-        setTimeout(updateFades, 0);
-      }, [textareaHeight]);
+        setContainerHeight(Math.max(116, newHeight + 48));
+      }, [value]);
 
       useEffect(() => {
         if (!isModelSelectOpen) return;
@@ -244,21 +170,10 @@
         return () => document.removeEventListener("mousedown", handleOutsideClick);
       }, [isModelSelectOpen]);
 
-      const handleBlur = (e) => {
-        if (internalContainerRef.current && internalContainerRef.current.contains(e.relatedTarget)) return;
-        if (value.trim() === "" && !isRecording) {
-          setIsSmoothResize(false);
-          setExpanded(false);
-          setIsModelSelectOpen(false);
-        }
-      };
-
       const handleSubmit = () => {
-        if (value.trim() === "") return;
-        setIsSmoothResize(false);
+        if (!hasValue) return;
         onSubmit?.(value, { model: selectedModel, effort: efforts[effortIndex] });
-        handleValueChange("");
-        setExpanded(false);
+        setValue("");
         setIsModelSelectOpen(false);
       };
 
@@ -267,177 +182,104 @@
         setEffortIndex((prev) => (prev + 1) % efforts.length);
       };
 
-      const onActionButtonClick = (e) => {
-        e.preventDefault();
-        if (isRecording) {
-          setIsRecording(false);
-        } else if (hasValue) {
-          handleSubmit();
-        } else {
-          setIsRecording(true);
-          setTimeout(() => setIsRecording(false), 2500);
-        }
-      };
-
       return (
         <div
           ref={internalContainerRef}
-          onBlur={handleBlur}
           className={cn("relative flex flex-col w-full", className)}
           style={{
-            maxWidth: expanded ? 480 : 320,
-            transition: isSmoothResize ? "max-width 0.15s ease-out" : "max-width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+            maxWidth: 680, // Expanded width sidewise
+            width: "100%",
           }}
         >
           <div
-            onMouseDown={(e) => {
-              const isTextarea = e.target === textareaRef.current;
-              if (expanded && !isTextarea && !isRecording) {
-                e.preventDefault();
-                textareaRef.current?.focus();
-              }
-            }}
             style={{
-              borderRadius: 24,
-              height: expanded ? containerHeight : 48,
-              transition: isSmoothResize ? SMOOTH_HEIGHT_TRANSITION : SPRING_TRANSITION,
-              overflow: expanded ? "visible" : "hidden",
+              borderRadius: 22,
+              height: containerHeight,
+              overflow: "visible",
             }}
-            className={cn(
-              "relative w-full border border-[#222222] bg-[#000000] focus-within:border-[#444444] hover:border-[#333333] z-10",
-              expanded ? "cursor-text" : "cursor-default"
-            )}
+            className="relative w-full border border-[#262626] bg-[#050505] focus-within:border-[#404040] transition-colors"
           >
+            {/* Textarea */}
             <textarea
               ref={textareaRef}
               value={value}
-              onChange={(e) => handleValueChange(e.target.value)}
-              onScroll={updateFades}
+              onChange={(e) => setValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleSubmit();
                 }
-                if (e.key === "Escape" && value.trim() === "") {
-                  setIsSmoothResize(false);
-                  setExpanded(false);
-                  setIsModelSelectOpen(false);
-                }
               }}
               placeholder={placeholder}
               aria-label="Prompt"
-              disabled={isRecording}
-              style={{
-                transition: isSmoothResize
-                  ? "height 0.15s ease-out"
-                  : "opacity 0.3s ease-out, transform 0.3s ease-out, height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
-              }}
-              className={cn(
-                "prompt-scrollbar absolute top-0 inset-x-0 z-[1] w-full resize-none bg-transparent pl-4 pr-12 py-3.5 text-sm leading-[22px] text-white outline-none placeholder:text-[#555555] cursor-text",
-                expanded ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-1 pointer-events-none",
-                isScrolling ? "overflow-y-auto" : "overflow-y-hidden"
-              )}
+              autoFocus
+              className="prompt-scrollbar absolute top-0 inset-x-0 w-full resize-none bg-transparent pl-5 pr-14 py-4 text-sm leading-[22px] text-white outline-none placeholder:text-[#555555] cursor-text"
             />
-            <div
-              ref={topFadeRef}
-              className="absolute left-4 right-12 top-0 z-[2] h-8 bg-gradient-to-b from-black via-black/90 to-transparent pointer-events-none"
-            />
-            <div
-              ref={bottomFadeRef}
-              className="absolute left-4 right-12 z-[2] h-8 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none"
-              style={{ 
-                opacity: 0, 
-                top: `${textareaHeight - 32}px`,
-                transition: isSmoothResize ? "top 0.15s ease-out" : "top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
-              }}
-            />
-            <button
-              type="button"
-              onClick={expand}
-              style={{ transition: isSmoothResize ? "none" : "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}
-              className={cn(
-                "absolute inset-x-0 top-0 z-[1] cursor-text pl-4 pr-12 py-[15px] text-left text-sm font-medium leading-[17px] text-[#666666] outline-none",
-                !expanded ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-105 translate-y-1 pointer-events-none"
-              )}
-            >
-              {placeholder}
-            </button>
 
-            {/* Bottom Actions Wrapper */}
-            <div
-              className={cn(
-                "absolute bottom-2 left-3 right-12 z-[10] flex items-center gap-0 transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]",
-                expanded && !isRecording ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-2 pointer-events-none"
-              )}
-            >
+            {/* Bottom Actions Bar */}
+            <div className="absolute bottom-2.5 left-4 right-14 flex items-center gap-1.5 pointer-events-auto">
+              {/* Model Dropdown Button */}
               <div className="relative">
                 <button
                   type="button"
-                  onMouseDown={(e) => e.preventDefault()} 
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsModelSelectOpen((prev) => !prev);
                   }}
                   className={cn(
-                    "group flex items-center gap-1 rounded-full px-2 py-1 text-white/50 transition-all duration-200 outline-none hover:bg-[#111111] hover:text-white cursor-default",
-                    isModelSelectOpen ? "bg-[#111111] text-white" : ""
+                    "group flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white/60 transition-all outline-none hover:bg-[#141414] hover:text-white cursor-pointer",
+                    isModelSelectOpen ? "bg-[#141414] text-white" : ""
                   )}
                 >
-                  <ModelIcon model={selectedModel} className="size-3.5 opacity-70 group-hover:opacity-100" />
-                  <span className="text-xs font-semibold select-none">
+                  <ModelIcon model={selectedModel} className="size-3.5 opacity-80 group-hover:opacity-100" />
+                  <span className="text-xs font-medium select-none">
                     <MorphingText text={selectedModel} />
                   </span>
                 </button>
-                <div
-                  className={cn(
-                    "absolute bottom-full left-0 mb-2.5 z-50 w-44 rounded-2xl border border-[#222222] bg-[#000000] p-1 shadow-2xl flex flex-col gap-0.5 transition-all duration-400 cursor-default",
-                    isModelSelectOpen
-                      ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
-                      : "opacity-0 scale-95 translate-y-3 pointer-events-none"
-                  )}
-                >
-                  <div className="relative flex flex-col gap-0.5">
+
+                {isModelSelectOpen && (
+                  <div className="absolute bottom-full left-0 mb-2 z-50 w-44 rounded-xl border border-[#262626] bg-[#0a0a0a] p-1 shadow-2xl flex flex-col gap-0.5">
                     {models.map((model) => (
                       <button
                         key={model}
                         type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={(e) => { e.stopPropagation(); setSelectedModel(model); setIsModelSelectOpen(false); }}
-                        className="group relative flex h-8 w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-xs font-medium text-white/80 hover:bg-[#111111] hover:text-white outline-none cursor-default"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedModel(model);
+                          setIsModelSelectOpen(false);
+                        }}
+                        className="group flex h-8 w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-white/80 hover:bg-[#1a1a1a] hover:text-white outline-none cursor-pointer"
                       >
                         <span className="flex items-center gap-2">
-                          <ModelIcon model={model} className="size-3.5 opacity-85 group-hover:opacity-100" />
+                          <ModelIcon model={model} className="size-3.5 opacity-80 group-hover:opacity-100" />
                           {model}
                         </span>
                       </button>
                     ))}
                   </div>
-                </div>
+                )}
               </div>
+
+              {/* Effort Button */}
               <button
-                type="button" onMouseDown={(e) => e.preventDefault()} onClick={cycleEffort}
-                className="group flex items-center gap-1 rounded-full px-2 py-1 text-white/50 transition-all duration-200 hover:bg-[#111111] hover:text-white outline-none cursor-default"
+                type="button"
+                onClick={cycleEffort}
+                className="group flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white/60 transition-all hover:bg-[#141414] hover:text-white outline-none cursor-pointer"
               >
                 <DynamicBarsIcon level={efforts[effortIndex]} />
-                <span className="text-xs font-semibold select-none"><MorphingText text={efforts[effortIndex]} /></span>
+                <span className="text-xs font-medium select-none">
+                  <MorphingText text={efforts[effortIndex]} />
+                </span>
               </button>
             </div>
 
+            {/* Mic / Send Action Button (White Circle) */}
             <button
               type="button"
-              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} 
-              onClick={onActionButtonClick}
-              style={{ borderRadius: 9999 }}
-              className="absolute right-2 bottom-2 z-[10] flex h-8 w-8 items-center justify-center bg-white text-black hover:bg-[#dddddd] transition-all outline-none cursor-default"
+              onClick={handleSubmit}
+              className="absolute right-3 bottom-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-black hover:bg-[#e0e0e0] transition-transform active:scale-95 outline-none cursor-pointer shadow-md"
             >
-              <span className="relative flex h-full w-full items-center justify-center">
-                <span className={cn("absolute inset-0 flex items-center justify-center transition-all duration-300", hasValue ? "opacity-100 scale-100" : "opacity-0 scale-50 pointer-events-none")}>
-                  <ArrowUpIcon />
-                </span>
-                <span className={cn("absolute inset-0 flex items-center justify-center transition-all duration-300", !hasValue ? "opacity-100 scale-100" : "opacity-0 scale-50 pointer-events-none")}>
-                  <MicIcon />
-                </span>
-              </span>
+              {hasValue ? <ArrowUpIcon /> : <MicIcon />}
             </button>
           </div>
         </div>
@@ -446,7 +288,7 @@
 
     function App() {
       const handleSendMessage = (message, meta) => {
-        console.log("Message:", message, "Meta:", meta);
+        console.log("Submitted:", message, meta);
       };
 
       return (
