@@ -797,7 +797,7 @@ export const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
                   handleSubmit();
                 }
                 if (e.key === "Escape") {
-                  setIsModelSelectOpen(false);
+                  // handle escape
                 }
               }}
               placeholder={placeholder}
