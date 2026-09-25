@@ -18,6 +18,7 @@ __pycache__/
 
 # Local Database Cache & Raw Large Files
 data/*.csv
+!data/case_pack.csv
 data/investigation.db
 *.sqlite
 *.sqlite3

@@ -34,12 +34,30 @@ class LekhDSL:
 
     @staticmethod
     def topology(dossier: Dict[str, Any]) -> List[str]:
-        graph = dossier.get("graph", {"nodes": [], "edges": []})
+        c = dossier.get("case", {})
+        case_id = dossier.get("case_id", "UNKNOWN")
         lines = []
-        for node in graph.get("nodes", []):
-            lines.append(f'[NODE {node.get("type","entity").upper()} id={node.get("id")} label="{node.get("label","")}"]')
-        for edge in graph.get("edges", []):
-            lines.append(f'[EDGE {edge.get("source")} -> {edge.get("target")} label={edge.get("label","CONNECTS")}]')
+        
+        # Check if explicit graph object exists
+        graph = dossier.get("graph")
+        if graph and graph.get("nodes"):
+            for node in graph.get("nodes", []):
+                lines.append(f'[NODE {node.get("type","entity").upper()} id={node.get("id")} label="{node.get("label","")}"]')
+            for edge in graph.get("edges", []):
+                lines.append(f'[EDGE {edge.get("source")} -> {edge.get("target")} label={edge.get("label","CONNECTS")}]')
+            return lines
+
+        # Otherwise synthesize directly from case dossier
+        for card in c.get("connected_card_ids", []):
+            lines.append(f'[NODE CARD id={card} label="Card"]')
+            lines.append(f'[EDGE {case_id} -> {card} label=INVOLVES_CARD]')
+        for dev in c.get("connected_device_profiles", []):
+            dev_short = dev.split("|")[0].strip() if "|" in dev else dev[:25]
+            lines.append(f'[NODE DEVICE id="{dev_short}" label="DeviceProfile"]')
+            lines.append(f'[EDGE {case_id} -> "{dev_short}" label=FROM_DEVICE]')
+        for txn in c.get("affected_txn_ids", [])[:5]:
+            lines.append(f'[NODE TXN id={txn} label="Transaction"]')
+            lines.append(f'[EDGE {case_id} -> {txn} label=AFFECTS_TXN]')
         return lines
 
     @staticmethod
