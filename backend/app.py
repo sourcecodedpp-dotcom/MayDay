@@ -129,6 +129,7 @@ def chat_with_agent(req: ChatRequest):
     
     return {
         "reply": res["reply"],
+        "openui_lang": res.get("openui_lang"),
         "case_id": res.get("case_id"),
         "model_used": res.get("model_used"),
         "quick_actions": res.get("quick_actions", [])

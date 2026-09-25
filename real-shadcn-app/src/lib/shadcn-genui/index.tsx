@@ -82,9 +82,9 @@ const ChatCard = defineComponent({
   description:
     "Vertical container for all content in a chat response. Children stack top to bottom automatically.",
   component: ({ props, renderNode }) => (
-    <Card>
-      <CardContent className="p-0 space-y-3">{renderNode(props.children)}</CardContent>
-    </Card>
+    <div className="dark rounded-xl border border-white/[0.08] bg-[#121215]/80 p-4 text-zinc-200 space-y-3.5 my-3">
+      {renderNode(props.children)}
+    </div>
   ),
 });
 
