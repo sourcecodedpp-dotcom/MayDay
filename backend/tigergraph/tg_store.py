@@ -56,6 +56,55 @@ class TigerGraphStore:
                 PRIMARY KEY (case_id, edge_type, target_id)
             )
         """)
+        # Transactions and identity tables (populated via CSV ingestion or live TigerGraph)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS transactions (
+                TransactionID INTEGER PRIMARY KEY,
+                customer_id TEXT,
+                card1 TEXT,
+                card4 TEXT,
+                card6 TEXT,
+                TransactionAmt REAL,
+                ts TEXT,
+                channel TEXT,
+                risk_score REAL,
+                ProductCD TEXT,
+                addr1 TEXT,
+                addr2 TEXT,
+                P_emaildomain TEXT,
+                R_emaildomain TEXT
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS identity (
+                TransactionID INTEGER PRIMARY KEY,
+                DeviceInfo TEXT,
+                id_30 TEXT,
+                id_31 TEXT,
+                id_33 TEXT,
+                id_15 TEXT,
+                id_23 TEXT
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS closed_cases (
+                case_id TEXT PRIMARY KEY,
+                customer_id TEXT,
+                card_id TEXT,
+                opened_at TEXT,
+                closed_at TEXT,
+                outcome TEXT,
+                pattern TEXT,
+                first_fraud_txn_id TEXT,
+                txn_ids TEXT,
+                n_txns INTEGER,
+                exposure_usd REAL,
+                connected_card_ids TEXT,
+                actions_taken TEXT,
+                report_filed TEXT,
+                analyst_notes TEXT
+            )
+        """)
         self.sqlite_conn.commit()
 
     def get_card_history(self, card_id: str, limit: int = 50, target_txn_id: Optional[int] = None) -> List[Dict[str, Any]]:
