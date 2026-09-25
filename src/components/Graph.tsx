@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { SubgraphData, GraphNode, GraphEdge } from "../lib/tigergraph";
+import { SubgraphData, GraphNode } from "../lib/tigergraph";
 
 interface GraphProps {
   subgraph: SubgraphData | null;

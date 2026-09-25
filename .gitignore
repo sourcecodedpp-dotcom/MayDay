@@ -1,7 +1,20 @@
+# Dependencies
+node_modules/
+*/node_modules/
+.pnpm-store/
+
+# Next.js & Build outputs
+.next/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
 # Virtual Environment
 venv/
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # Local Database Cache & Raw Large Files
 data/*.csv
@@ -9,8 +22,17 @@ data/investigation.db
 *.sqlite
 *.sqlite3
 
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
 # OS Files
 .DS_Store
+Thumbs.db
 
 # Environment Variables
 .env
+.env*.local

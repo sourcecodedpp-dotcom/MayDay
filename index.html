@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MAY // Team MAYDAY</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" />
   <style>
     * {
@@ -37,120 +34,6 @@
 </head>
 <body class="bg-[#0b0b0d] text-[#e4e4e7] min-h-screen">
   <div id="root"></div>
-
-  <!-- Entry Point Loader: Loads modular React + TypeScript application from src/main.tsx -->
-  <script>
-    (function() {
-      const moduleCache = new Map();
-      moduleCache.set('react', React);
-      moduleCache.set('react-dom', ReactDOM);
-      moduleCache.set('react-dom/client', ReactDOM);
-
-      async function loadTsxModule(url, baseDir = '/src/') {
-        let resolvedUrl = url;
-        if (!resolvedUrl.startsWith('http') && !resolvedUrl.startsWith('/')) {
-          resolvedUrl = baseDir + resolvedUrl;
-        }
-        if (!resolvedUrl.endsWith('.tsx') && !resolvedUrl.endsWith('.ts') && !resolvedUrl.endsWith('.js')) {
-          resolvedUrl = resolvedUrl + '.tsx';
-        }
-
-        if (moduleCache.has(resolvedUrl)) {
-          return moduleCache.get(resolvedUrl);
-        }
-
-        const cacheBuster = `?t=${Date.now()}`;
-        let res = await fetch(resolvedUrl + cacheBuster, { cache: 'no-store' });
-        if (!res.ok && resolvedUrl.endsWith('.tsx')) {
-          const altUrl = resolvedUrl.replace(/\.tsx$/, '.ts');
-          res = await fetch(altUrl + cacheBuster, { cache: 'no-store' });
-          if (res.ok) resolvedUrl = altUrl;
-        }
-        if (!res.ok) throw new Error(`Failed to load module: ${resolvedUrl}`);
-
-        const code = await res.text();
-        const currentDir = resolvedUrl.substring(0, resolvedUrl.lastIndexOf('/') + 1);
-
-        const transformed = Babel.transform(code, {
-          presets: [
-            ['react'],
-            ['typescript', { isTSX: true, allExtensions: true }]
-          ],
-          plugins: [
-            ['transform-modules-commonjs']
-          ],
-          filename: resolvedUrl
-        }).code;
-
-        const exports = {};
-        const module = { exports };
-        moduleCache.set(resolvedUrl, exports);
-
-        const customRequire = (specifier) => {
-          if (specifier === 'react') return React;
-          if (specifier === 'react-dom' || specifier === 'react-dom/client') return ReactDOM;
-
-          let target = specifier;
-          if (target.startsWith('.')) {
-            const parts = (currentDir + target).split('/');
-            const stack = [];
-            for (const p of parts) {
-              if (p === '' || p === '.') continue;
-              if (p === '..') stack.pop();
-              else stack.push(p);
-            }
-            target = '/' + stack.join('/');
-          }
-          if (moduleCache.has(target)) return moduleCache.get(target);
-          if (moduleCache.has(target + '.tsx')) return moduleCache.get(target + '.tsx');
-          if (moduleCache.has(target + '.ts')) return moduleCache.get(target + '.ts');
-
-          throw new Error(`Module not found in require: ${specifier} (resolved: ${target})`);
-        };
-
-        // Pre-fetch dependencies
-        const importRegex = /require\(["']([^"']+)["']\)/g;
-        let match;
-        const deps = [];
-        while ((match = importRegex.exec(transformed)) !== null) {
-          const dep = match[1];
-          if (dep !== 'react' && dep !== 'react-dom' && dep !== 'react-dom/client') {
-            deps.push(dep);
-          }
-        }
-
-        for (const dep of deps) {
-          let depUrl = dep;
-          if (depUrl.startsWith('.')) {
-            const parts = (currentDir + depUrl).split('/');
-            const stack = [];
-            for (const p of parts) {
-              if (p === '' || p === '.') continue;
-              if (p === '..') stack.pop();
-              else stack.push(p);
-            }
-            depUrl = '/' + stack.join('/');
-          }
-          await loadTsxModule(depUrl, currentDir);
-        }
-
-        const fn = new Function('require', 'module', 'exports', 'React', 'ReactDOM', transformed);
-        fn(customRequire, module, exports, React, ReactDOM);
-
-        return module.exports;
-      }
-
-      loadTsxModule('/src/main.tsx')
-        .catch(err => {
-          console.error('Error bootstrapping May application:', err);
-          document.getElementById('root').innerHTML = `
-            <div style="padding: 24px; color: #ef4444; font-family: monospace;">
-              <h3>Failed to load May interface</h3>
-              <pre>${err.message}</pre>
-            </div>
-          `;
-        });
-    })();
-  </script>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

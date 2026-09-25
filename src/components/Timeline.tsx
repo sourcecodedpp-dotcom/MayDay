@@ -32,7 +32,7 @@ export const Timeline: React.FC<TimelineProps> = ({ investigation }) => {
       status: "done",
       detail: `Calculated fraud probability: ${(c.fraud_probability * 100).toFixed(0)}%.`
     },
-    ...(evidence_requests.length > 0 ? evidence_requests.map((req, i) => ({
+    ...(evidence_requests.length > 0 ? evidence_requests.map((req, _i) => ({
       title: `EVIDENCE DISCOVERY: ${req.type.toUpperCase().replace("_", " ")}`,
       subtitle: `Inquiry after step ${req.asked_after_step}`,
       time: `${(latency_s * 0.8).toFixed(1)}s`,
