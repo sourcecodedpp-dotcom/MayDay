@@ -302,9 +302,8 @@ def trigger_tigergraph_ingest(req: IngestRequest):
 
 @app.get("/")
 def get_dashboard():
-    if os.path.exists(FRONTEND_FILE):
-        return FileResponse(FRONTEND_FILE, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
-    return JSONResponse({"message": "Frontend not found", "docs": "/docs"})
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="http://localhost:3001/")
 
 @app.post("/api/simulate/{case_id}")
 def simulate_case_evidence(case_id: str, req: SimulateRequest):

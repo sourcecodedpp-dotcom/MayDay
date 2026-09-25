@@ -73,12 +73,21 @@ To test the generated JSON files against every rule in the official evaluator:
 python scripts/validate_answers.py
 ```
 
-### 4. Launch the Analyst Cockpit UI
-Start the backend server and open the interactive dashboard:
+### 4. Launch the MayDay AI Cockpit UI
+
+**Terminal 1 (Backend - FastAPI + TigerGraph MCP):**
 ```bash
-uvicorn backend.app:app --host 0.0.0.0 --port 8000
+source venv/bin/activate
+uvicorn backend.app:app --host 0.0.0.0 --port 8000 --reload
 ```
-Open **[http://localhost:8000](http://localhost:8000)** in your browser.
+
+**Terminal 2 (Frontend - MayDay Cockpit):**
+```bash
+npm run dev
+# or: cd real-shadcn-app && pnpm run dev --port 3001
+```
+
+Open **[http://localhost:3001](http://localhost:3001)** in your browser. (Opening `http://localhost:8000` will also automatically redirect you to port 3001).
 
 ---
 
